@@ -1,0 +1,78 @@
+# Java (Backend)
+*.class
+*.jar
+*.war
+*.nar
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Gradle
+.gradle/
+build/
+
+# IDE — IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# IDE — Eclipse
+.settings/
+.project
+.classpath
+bin/
+*.classpath
+*.project
+
+# IDE — VS Code
+.vscode/
+*.code-workspace
+
+# IDE — NetBeans
+nbproject/
+nbactions.xml
+nb-configuration.xml
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Node / Frontend
+node_modules/
+package-lock.json
+yarn.lock
+.pnp/
+.pnp.js
+
+# Vite / Build
+TaskManagement-ui/dist/
+TaskManagement-ui/build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Test reports
+**/test-reports/
+**/surefire-reports/
+**/jacoco.exec
+
+# Spring Boot
+**/application-local.properties
+**/application-local.yml
+**/application-dev.properties
+**/application-dev.yml
+
+# Maven wrapper
+task-management-api/.mvn/
