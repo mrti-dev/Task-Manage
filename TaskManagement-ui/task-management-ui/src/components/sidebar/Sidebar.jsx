@@ -13,24 +13,65 @@ import {
   useMediaQuery,
   Divider,
   Skeleton,
+  Tooltip,
 } from '@mui/material';
 import {
   DashboardRounded as DashboardIcon,
   ChevronLeftRounded as CollapseIcon,
   AddRounded as AddIcon,
-  SpaceDashboardRounded as WorkspaceIcon,
+  AssignmentTurnedInRounded as MyTasksIcon,
+  CalendarMonthRounded as CalendarIcon,
+  BarChartRounded as MetricsIcon,
+  BusinessRounded as WorkspaceNavIcon,
+  WorkspacePremiumRounded as OwnerIcon,
 } from '@mui/icons-material';
 import { getWorkspacesApi } from '../../api/workspaceApi';
+import { useAuth } from '../../contexts/AuthContext';
+import CreateWorkspaceDialog from '../workspace/CreateWorkspaceDialog';
+import { on } from '../../utils/eventBus';
+import { isWorkspaceOwner } from '../../utils/workspaceOwnership';
 
-const DRAWER_WIDTH = 270;
+const DRAWER_WIDTH = 256;
 
 export default function Sidebar({ open, onToggle }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  useEffect(() => on('workspace:created', (workspace) => {
+    setWorkspaces((current) => current.some(({ id }) => id === workspace.id)
+      ? current
+      : [...current, workspace]);
+  }), []);
+
+  useEffect(() => on('workspace:deleted', (workspaceId) => {
+    setWorkspaces((current) => current.filter(({ id }) => id !== workspaceId));
+  }), []);
+
+  useEffect(() => on('workspace:project-count-changed', ({ workspaceId, delta }) => {
+    setWorkspaces((current) => current.map((workspace) => workspace.id === workspaceId
+      ? { ...workspace, projectCount: Math.max(0, (workspace.projectCount ?? 0) + delta) }
+      : workspace));
+  }), []);
+  useEffect(() => on('workspace:owner-changed', ({ id, owner }) => {
+    setWorkspaces((current) => current.map((workspace) => workspace.id === id
+      ? { ...workspace, owner }
+      : workspace));
+  }), []);
+
+  useEffect(() => on('workspace:joined', async () => {
+    try {
+      const { data: res } = await getWorkspacesApi();
+      setWorkspaces(res?.data ?? []);
+    } catch (err) {
+      console.warn('Failed to refresh workspaces after joining:', err?.message);
+    }
+  }), []);
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +80,8 @@ export default function Sidebar({ open, onToggle }) {
       try {
         const { data: res } = await getWorkspacesApi();
         setWorkspaces(res?.data ?? []);
-      } catch {
+      } catch (err) {
+        console.warn('Failed to load workspaces in sidebar:', err?.message);
       } finally {
         setLoading(false);
       }
@@ -49,6 +91,12 @@ export default function Sidebar({ open, onToggle }) {
 
   const currentWsId = location.pathname.match(/\/workspaces\/(\d+)/)?.[1];
 
+  useEffect(() => {
+    if (currentWsId) {
+      localStorage.setItem('lastWorkspaceId', currentWsId);
+    }
+  }, [currentWsId]);
+
   const content = (
     <Box
       sx={{
@@ -56,7 +104,8 @@ export default function Sidebar({ open, onToggle }) {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: '#F8FAFC',
+        bgcolor: '#F3F6F4',
+        borderRight: '1px solid rgba(23,32,31,0.08)',
       }}
     >
       <Box
@@ -77,30 +126,121 @@ export default function Sidebar({ open, onToggle }) {
               width: 36,
               height: 36,
               borderRadius: 2,
-              background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+              background: '#17201F',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(59,130,246,0.3)',
+              boxShadow: '0 2px 8px rgba(15,118,110,0.3)',
             }}
           >
             <DashboardIcon sx={{ color: '#fff', fontSize: 20 }} />
           </Box>
           <Box>
-            <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#0F172A', lineHeight: 1.2 }}>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#17201F', lineHeight: 1.2 }}>
               Task Manager
             </Typography>
-            <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+            <Typography variant="caption" sx={{ color: '#84918D' }}>
               Workspace dashboard
             </Typography>
           </Box>
         </Box>
         {isMobile && (
-          <IconButton onClick={onToggle} size="small" sx={{ color: '#94A3B8' }}>
+          <IconButton onClick={onToggle} size="small" sx={{ color: '#84918D' }}>
             <CollapseIcon />
           </IconButton>
         )}
       </Box>
+
+      <Divider sx={{ mx: 2 }} />
+
+      {/* Navigation Links */}
+      <List sx={{ px: 1.5, py: 1 }} dense>
+        <ListItemButton
+          selected={location.pathname === '/'}
+          onClick={() => {
+            navigate('/');
+            if (isMobile) onToggle();
+          }}
+          sx={{
+            borderRadius: 2,
+            mb: 0.5,
+            py: 0.8,
+            px: 1.5,
+            '&.Mui-selected': { bgcolor: '#D9F3ED', color: '#115E59' },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: location.pathname === '/' ? '#0F766E' : '#84918D' }}>
+            <WorkspaceNavIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="All Workspaces" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+        </ListItemButton>
+
+        <ListItemButton
+          selected={location.pathname === '/my-tasks'}
+          onClick={() => {
+            navigate('/my-tasks');
+            if (isMobile) onToggle();
+          }}
+          sx={{
+            borderRadius: 2,
+            mb: 0.5,
+            py: 0.8,
+            px: 1.5,
+            '&.Mui-selected': { bgcolor: '#D9F3ED', color: '#115E59' },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: location.pathname === '/my-tasks' ? '#0F766E' : '#84918D' }}>
+            <MyTasksIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="My Tasks" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+        </ListItemButton>
+
+
+        <ListItemButton
+          selected={location.pathname === '/calendar' || location.pathname.endsWith('/calendar')}
+          onClick={() => {
+            navigate('/calendar');
+            if (isMobile) onToggle();
+          }}
+          sx={{
+            borderRadius: 2,
+            mb: 0.5,
+            py: 0.8,
+            px: 1.5,
+            '&.Mui-selected': { bgcolor: '#D9F3ED', color: '#115E59' },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: (location.pathname === '/calendar' || location.pathname.endsWith('/calendar')) ? '#0F766E' : '#84918D' }}>
+            <CalendarIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Calendar" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+        </ListItemButton>
+
+        <ListItemButton
+          selected={location.pathname === '/dashboard' || location.pathname.endsWith('/dashboard')}
+          onClick={() => {
+            const targetWsId = currentWsId || localStorage.getItem('lastWorkspaceId') || workspaces[0]?.id;
+            if (targetWsId) {
+              navigate(`/workspaces/${targetWsId}/dashboard`);
+            } else {
+              navigate('/dashboard');
+            }
+            if (isMobile) onToggle();
+          }}
+          sx={{
+            borderRadius: 2,
+            mb: 0.5,
+            py: 0.8,
+            px: 1.5,
+            '&.Mui-selected': { bgcolor: '#D9F3ED', color: '#115E59' },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: (location.pathname === '/dashboard' || location.pathname.endsWith('/dashboard')) ? '#0F766E' : '#84918D' }}>
+            <MetricsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="WS Dashboard" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+        </ListItemButton>
+      </List>
 
       <Divider sx={{ mx: 2 }} />
 
@@ -110,23 +250,25 @@ export default function Sidebar({ open, onToggle }) {
             variant="caption"
             sx={{
               fontWeight: 700,
-              color: '#94A3B8',
+              color: '#84918D',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              fontSize: '0.6875rem',
+              fontSize: '0.8125rem',
             }}
           >
             Workspaces
           </Typography>
           <IconButton
             size="small"
-            onClick={() => navigate('/')}
+            aria-label="Create workspace"
+            title="Create workspace"
+            onClick={() => setCreateOpen(true)}
             sx={{
-              color: '#3B82F6',
-              bgcolor: '#F1F5F9',
+              color: '#0F766E',
+              bgcolor: '#EEF3F0',
               width: 26,
               height: 26,
-              '&:hover': { bgcolor: '#DBEAFE' },
+              '&:hover': { bgcolor: '#D9F3ED' },
             }}
           >
             <AddIcon sx={{ fontSize: 16 }} />
@@ -142,7 +284,7 @@ export default function Sidebar({ open, onToggle }) {
         ) : workspaces.length === 0 ? (
           <Typography
             variant="body2"
-            sx={{ px: 2, py: 3, textAlign: 'center', color: '#94A3B8' }}
+            sx={{ px: 2, py: 3, textAlign: 'center', color: '#84918D' }}
           >
             No workspaces yet
           </Typography>
@@ -163,43 +305,49 @@ export default function Sidebar({ open, onToggle }) {
                   py: 1,
                   px: 1.5,
                   '&.Mui-selected': {
-                    bgcolor: '#3B82F6',
-                    color: '#fff',
-                    '&:hover': { bgcolor: '#2563EB' },
-                    '& .MuiListItemIcon-root': { color: '#fff' },
-                    '& .ws-badge': { color: '#fff', bgcolor: 'rgba(255,255,255,0.2)' },
+                    bgcolor: '#D9F3ED',
+                    color: '#115E59',
+                    '&:hover': { bgcolor: '#C7EBE3' },
+                    '& .MuiListItemIcon-root': { color: '#0F766E' },
+                    '& .ws-badge': { color: '#115E59', bgcolor: 'rgba(15,118,110,0.1)' },
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 32, color: selected ? '#fff' : '#94A3B8' }}>
+                <ListItemIcon sx={{ minWidth: 32, color: selected ? '#0F766E' : '#84918D' }}>
                   <Box
                     sx={{
                       width: 8,
                       height: 8,
                       borderRadius: '50%',
-                      bgcolor: selected ? '#fff' : '#3B82F6',
+                      bgcolor: '#0F766E',
                     }}
                   />
                 </ListItemIcon>
                 <ListItemText
                   primary={ws.name}
+                  sx={{ minWidth: 0 }}
                   primaryTypographyProps={{
                     variant: 'body2',
                     fontWeight: selected ? 600 : 500,
                     noWrap: true,
-                    sx: { color: selected ? '#fff' : '#475569' },
+                    sx: { color: selected ? '#115E59' : '#42504C' },
                   }}
                 />
+                {isWorkspaceOwner(ws, user) && (
+                  <Tooltip title="Workspace owner">
+                    <OwnerIcon aria-label="Workspace owner" sx={{ color: 'warning.dark', fontSize: 16, ml: 0.5, mr: 0.5, flexShrink: 0 }} />
+                  </Tooltip>
+                )}
                 <Box
                   className="ws-badge"
                   sx={{
                     px: 1,
                     py: 0.25,
                     borderRadius: 1,
-                    fontSize: '0.6875rem',
+                    fontSize: '0.8125rem',
                     fontWeight: 600,
-                    color: selected ? '#3B82F6' : '#94A3B8',
-                    bgcolor: selected ? 'rgba(255,255,255,0.2)' : '#F1F5F9',
+                    color: selected ? '#115E59' : '#84918D',
+                    bgcolor: selected ? 'rgba(15,118,110,0.1)' : '#EEF3F0',
                   }}
                 >
                   {ws.projectCount ?? 0}
@@ -210,11 +358,20 @@ export default function Sidebar({ open, onToggle }) {
         )}
       </List>
 
-      <Box sx={{ p: 2, borderTop: '1px solid', borderColor: '#E2E8F0' }}>
-        <Typography variant="caption" sx={{ color: '#CBD5E1', textAlign: 'center', display: 'block' }}>
+      <Box sx={{ p: 2, borderTop: '1px solid', borderColor: '#DCE4E0' }}>
+        <Typography variant="caption" sx={{ color: '#CBD5D1', textAlign: 'center', display: 'block' }}>
           Task Manager v1.0
         </Typography>
       </Box>
+
+      <CreateWorkspaceDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(workspace) => {
+          navigate(`/workspaces/${workspace.id}`);
+          if (isMobile) onToggle();
+        }}
+      />
     </Box>
   );
 

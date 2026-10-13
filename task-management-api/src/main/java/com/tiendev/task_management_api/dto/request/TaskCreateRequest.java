@@ -8,6 +8,7 @@ import com.tiendev.task_management_api.model.enums.TaskStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,8 +23,10 @@ public class TaskCreateRequest {
 	private Long projectId;
 
 	@NotBlank
+	@Size(max = 200, message = "Task title must not exceed 200 characters")
 	private String title;
 
+	@Size(max = 1000, message = "Task description must not exceed 1000 characters")
 	private String description;
 
 	@NotNull
@@ -35,4 +38,6 @@ public class TaskCreateRequest {
 	private String assigneeEmail;
 
 	private LocalDate deadline;
+	private Long parentId;
+	private java.util.List<Long> tagIds;
 }

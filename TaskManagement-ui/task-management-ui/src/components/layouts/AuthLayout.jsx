@@ -2,6 +2,8 @@ import { Outlet, Link } from 'react-router-dom';
 import { Box, Container, Typography, Paper } from '@mui/material';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export default function AuthLayout() {
   return (
     <Box
@@ -10,12 +12,12 @@ export default function AuthLayout() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #F1F5F9 0%, #DBEAFE 50%, #E2E8F0 100%)',
+        background: '#EEF3F0',
         py: 4,
         px: 2,
       }}
     >
-      <Container maxWidth="sm">
+      <Container disableGutters sx={{ width: '100%', maxWidth: '480px !important' }}>
         <Box
           component={Link}
           to="/"
@@ -33,11 +35,11 @@ export default function AuthLayout() {
               width: 44,
               height: 44,
               borderRadius: 3,
-              background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+              background: '#0F766E',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
+              boxShadow: '0 4px 12px rgba(15,118,110,0.3)',
             }}
           >
             <CheckCircleRoundedIcon sx={{ color: '#fff', fontSize: 26 }} />
@@ -45,7 +47,7 @@ export default function AuthLayout() {
           <Typography
             variant="h5"
             fontWeight={800}
-            sx={{ color: '#0F172A', letterSpacing: '-0.02em' }}
+            sx={{ color: '#17201F', letterSpacing: '-0.02em' }}
           >
             Task Manager
           </Typography>
@@ -54,9 +56,9 @@ export default function AuthLayout() {
         <Paper
           elevation={0}
           sx={{
-            p: 4,
+            p: { xs: 4, sm: 6 },
             borderRadius: 4,
-            border: '1px solid #E2E8F0',
+            border: '1px solid #DCE4E0',
             boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
           }}
         >
@@ -67,9 +69,9 @@ export default function AuthLayout() {
           variant="caption"
           align="center"
           display="block"
-          sx={{ mt: 3, color: '#94A3B8' }}
+          sx={{ mt: 3, color: '#84918D' }}
         >
-          &copy; {new Date().getFullYear()} Task Manager. All rights reserved.
+          &copy; {CURRENT_YEAR} Task Manager. All rights reserved.
         </Typography>
       </Container>
     </Box>

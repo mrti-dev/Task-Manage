@@ -40,7 +40,7 @@ public class User {
 
 	@NotBlank
 	@Size(min = 3, max = 50)
-	@Column(nullable = false, unique = true, length = 50)
+	@Column(nullable = false, length = 50)
 	private String username;
 
 	@NotBlank
@@ -59,6 +59,9 @@ public class User {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private Role role;
+
+	@Column(name = "email_verified", nullable = false)
+	private boolean emailVerified = false;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;

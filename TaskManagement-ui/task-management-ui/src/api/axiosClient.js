@@ -24,12 +24,22 @@ let isRefreshing = false;
 let refreshSubscribers = [];
 
 function onRefreshed(newToken) {
-  refreshSubscribers.forEach((callback) => callback(newToken));
+  refreshSubscribers.forEach(({ resolve, originalRequest }) => {
+    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+    resolve(axiosClient(originalRequest));
+  });
   refreshSubscribers = [];
 }
 
-function addRefreshSubscriber(callback) {
-  refreshSubscribers.push(callback);
+function onRefreshFailed(error) {
+  refreshSubscribers.forEach(({ reject }) => {
+    reject(error);
+  });
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(resolve, reject, originalRequest) {
+  refreshSubscribers.push({ resolve, reject, originalRequest });
 }
 
 const axiosClient = axios.create({
@@ -57,14 +67,13 @@ axiosClient.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/api/auth/refresh')
     ) {
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          addRefreshSubscriber((newToken) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            resolve(axiosClient(originalRequest));
-          });
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber(resolve, reject, originalRequest);
         });
       }
 
@@ -84,10 +93,11 @@ axiosClient.interceptors.response.use(
         if (onTokenRefreshed) onTokenRefreshed();
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return axiosClient(originalRequest);
-      } catch {
+      } catch (refreshError) {
         setAccessToken(null);
+        onRefreshFailed(refreshError);
         if (onAuthFailed) onAuthFailed();
-        return Promise.reject(error);
+        return Promise.reject(refreshError || error);
       } finally {
         isRefreshing = false;
       }

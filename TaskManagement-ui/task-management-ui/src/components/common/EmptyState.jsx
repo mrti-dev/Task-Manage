@@ -18,20 +18,20 @@ export default function EmptyState({ icon, title = 'No data', description, actio
           width: 80,
           height: 80,
           borderRadius: '50%',
-          bgcolor: '#F1F5F9',
+          bgcolor: '#EEF3F0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           mb: 2.5,
         }}
       >
-        {icon || <InboxRoundedIcon sx={{ fontSize: 36, color: '#3B82F6' }} />}
+        {icon || <InboxRoundedIcon sx={{ fontSize: 36, color: '#0F766E' }} />}
       </Box>
-      <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5, color: '#0F172A' }}>
+      <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5, color: '#17201F' }}>
         {title}
       </Typography>
       {description && (
-        <Typography variant="body2" sx={{ color: '#94A3B8', mb: 2.5, textAlign: 'center', maxWidth: 300 }}>
+        <Typography variant="body2" sx={{ color: '#84918D', mb: 2.5, textAlign: 'center', maxWidth: 300 }}>
           {description}
         </Typography>
       )}

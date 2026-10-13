@@ -48,4 +48,12 @@ public class WorkspaceController {
         workspaceService.delete(id);
         return ApiResponse.success(null, "Workspace deleted successfully");
     }
+
+    @PostMapping("/{id}/transfer-owner")
+    public ResponseEntity<ApiResponse<WorkspaceResponse>> transferOwnership(
+            @PathVariable Long id,
+            @Valid @RequestBody com.tiendev.task_management_api.dto.request.TransferOwnershipRequest request) {
+        WorkspaceResponse response = workspaceService.transferOwnership(id, request);
+        return ApiResponse.success(response, "Ownership transferred successfully");
+    }
 }

@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -116,9 +115,11 @@ public class CommentServiceImpl implements CommentService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<CommentResponse> getByTaskId(Long taskId) {
+		Task task = taskRepository.findById(taskId)
+				.orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+		validateParentChain(task);
+		validateMembership(task.getProject().getWorkspace().getId());
 		return commentRepository.findByTaskId(taskId).stream()
-				.filter(c -> c.getTask().isActive() && c.getTask().getProject().isActive()
-						&& c.getTask().getProject().getWorkspace().isActive())
 				.map(this::toCommentResponse)
 				.toList();
 	}

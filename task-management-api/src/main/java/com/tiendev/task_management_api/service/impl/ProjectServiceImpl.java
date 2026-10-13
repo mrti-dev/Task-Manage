@@ -146,7 +146,12 @@ public class ProjectServiceImpl implements ProjectService {
         if (request.getStatus() != null) {
             project.setStatus(request.getStatus());
         }
-        if (request.getEndDate() != null) {
+        if (request.isClearEndDate() && request.getEndDate() != null) {
+            throw new BusinessException("Cannot provide both endDate and clearEndDate");
+        }
+        if (request.isClearEndDate()) {
+            project.setEndDate(null);
+        } else if (request.getEndDate() != null) {
             project.setEndDate(request.getEndDate());
         }
         validateProjectDates(project);
@@ -172,7 +177,12 @@ public class ProjectServiceImpl implements ProjectService {
             activityLogService.log(EntityType.PROJECT, project.getId(), ActivityAction.UPDATED,
                     "status", oldStatus.name(), request.getStatus().name(), currentUserId, workspaceId);
         }
-        if (request.getEndDate() != null && !request.getEndDate().equals(oldEndDate)) {
+        if (request.isClearEndDate()) {
+            if (oldEndDate != null) {
+                activityLogService.log(EntityType.PROJECT, project.getId(), ActivityAction.UPDATED,
+                        "endDate", oldEndDate.toString(), null, currentUserId, workspaceId);
+            }
+        } else if (request.getEndDate() != null && !request.getEndDate().equals(oldEndDate)) {
             activityLogService.log(EntityType.PROJECT, project.getId(), ActivityAction.UPDATED,
                     "endDate",
                     oldEndDate != null ? oldEndDate.toString() : null,
@@ -234,9 +244,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     private void validateOwner(Long workspaceId) {
         Long currentUserId = getCurrentUserId();
-        boolean isOwner = workspaceMemberRepository.findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER)
-                .filter(owner -> owner.getUser().getId().equals(currentUserId))
-                .isPresent();
+        boolean isOwner = workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, currentUserId, WorkspaceRole.OWNER);
         if (!isOwner) {
             throw new InvalidOperationException("Only workspace owner can perform this action.");
         }
@@ -245,13 +253,13 @@ public class ProjectServiceImpl implements ProjectService {
     private void sendProjectNotification(Project project, NotificationType type, String title, String content) {
         Workspace workspace = project.getWorkspace();
         Long senderId = getCurrentUserId();
-        Long ownerId = workspaceMemberRepository.findByWorkspaceIdAndRole(workspace.getId(), WorkspaceRole.OWNER)
-                .map(m -> m.getUser().getId()).orElse(null);
+        Set<Long> ownerIds = workspaceMemberRepository.findByWorkspaceIdAndRole(workspace.getId(), WorkspaceRole.OWNER)
+                .stream().map(m -> m.getUser().getId()).collect(Collectors.toSet());
 
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspace.getId());
         for (WorkspaceMember member : members) {
             if (member.getUser().getId().equals(senderId)) {
-                if (!member.getUser().getId().equals(ownerId)) {
+                if (!ownerIds.contains(member.getUser().getId())) {
                     continue;
                 }
             }
@@ -267,7 +275,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private void validateProjectDates(Project project) {
-        if (project.getEndDate() != null && project.getEndDate().isBefore(project.getStartDate())) {
+        if (project.getEndDate() != null && project.getStartDate() != null && project.getEndDate().isBefore(project.getStartDate())) {
             throw new BusinessException(
                     "Project end date must be after or equal to start date (" + project.getStartDate() + ").");
         }

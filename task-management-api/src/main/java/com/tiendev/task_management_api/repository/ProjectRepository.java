@@ -13,7 +13,21 @@ import java.util.Set;
 
 public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpecificationExecutor<Project> {
     List<Project> findByWorkspaceId(Long workspaceId);
+    List<Project> findByWorkspaceIdAndActiveTrue(Long workspaceId);
 
     @Query("SELECT p FROM Project p WHERE p.active = true AND p.workspace.active = true AND p.workspace.id IN :workspaceIds")
     Page<Project> findAllActiveByWorkspaceIds(@Param("workspaceIds") Set<Long> workspaceIds, Pageable pageable);
+
+    @Query("SELECT p FROM Project p " +
+           "JOIN FETCH p.workspace w " +
+           "WHERE p.active = true " +
+           "AND w.active = true " +
+           "AND w.id IN :workspaceIds " +
+           "AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "  OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+           "ORDER BY p.name ASC")
+    List<Project> searchProjects(
+            @Param("workspaceIds") java.util.Collection<Long> workspaceIds,
+            @Param("query") String query,
+            Pageable pageable);
 }

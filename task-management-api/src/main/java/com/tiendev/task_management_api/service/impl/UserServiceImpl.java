@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tiendev.task_management_api.dto.UserResponse;
 import com.tiendev.task_management_api.dto.request.UserCreateRequest;
 import com.tiendev.task_management_api.dto.request.UserUpdateRequest;
+import com.tiendev.task_management_api.exception.BusinessException;
 import com.tiendev.task_management_api.exception.ResourceAlreadyExistsException;
 import com.tiendev.task_management_api.exception.ResourceNotFoundException;
 import com.tiendev.task_management_api.model.User;
@@ -29,9 +30,6 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional
 	public UserResponse create(UserCreateRequest request) {
-		if (userRepository.existsByUsername(request.getUsername())) {
-			throw new ResourceAlreadyExistsException("Username already exists: " + request.getUsername());
-		}
 		if (userRepository.existsByEmail(request.getEmail())) {
 			throw new ResourceAlreadyExistsException("Email already exists: " + request.getEmail());
 		}
@@ -69,10 +67,6 @@ public class UserServiceImpl implements UserService {
 				.orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
 		if (request.getUsername() != null) {
-			if (!request.getUsername().equals(user.getUsername())
-					&& userRepository.existsByUsername(request.getUsername())) {
-				throw new ResourceAlreadyExistsException("Username already exists: " + request.getUsername());
-			}
 			user.setUsername(request.getUsername());
 		}
 		if (request.getEmail() != null) {
@@ -111,7 +105,7 @@ public class UserServiceImpl implements UserService {
 
 		if (request.getUsername() != null) {
 			if (request.getUsername().isBlank()) {
-				throw new IllegalArgumentException("Username must not be blank");
+				throw new BusinessException("Username must not be blank");
 			}
 			user.setUsername(request.getUsername());
 		}

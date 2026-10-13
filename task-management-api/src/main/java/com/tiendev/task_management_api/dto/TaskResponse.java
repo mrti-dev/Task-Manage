@@ -25,6 +25,13 @@ public class TaskResponse {
     private TaskStatus status;
     private UserResponse assignee;
     private LocalDate deadline;
+    private boolean overdue;
+    private boolean dueSoon;
+    private Long parentTaskId;
+    private int subtaskCount;
+    private int completedSubtaskCount;
+    private java.util.List<TagResponse> tags;
+    private java.util.List<ChecklistItemResponse> checklist;
     private int commentCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

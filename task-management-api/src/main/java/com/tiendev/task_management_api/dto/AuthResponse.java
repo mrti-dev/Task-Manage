@@ -15,5 +15,6 @@ public class AuthResponse {
     private UserResponse user;
 
     @JsonIgnore
+    @lombok.ToString.Exclude
     private String refreshToken;
 }

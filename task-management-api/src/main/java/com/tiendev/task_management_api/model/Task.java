@@ -78,6 +78,25 @@ public class Task {
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "parent_id")
+	private Task parentTask;
+
+	@OneToMany(mappedBy = "parentTask", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<Task> subtasks = new ArrayList<>();
+
+	@jakarta.persistence.ManyToMany
+	@jakarta.persistence.JoinTable(name = "task_tags",
+			joinColumns = @JoinColumn(name = "task_id"),
+			inverseJoinColumns = @JoinColumn(name = "tag_id"))
+	private java.util.Set<Tag> tags = new java.util.HashSet<>();
+
+	@OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<TaskChecklistItem> checklistItems = new ArrayList<>();
+
+	@OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<TaskDependency> dependencies = new ArrayList<>();
+
 	@OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Comment> comments = new ArrayList<>();
 

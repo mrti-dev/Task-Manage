@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -40,7 +40,7 @@ import { on } from '../../utils/eventBus';
 dayjs.extend(relativeTime);
 
 const typeIcons = {
-  WORKSPACE_CREATED: { icon: <GroupIcon />, color: '#3B82F6' },
+  WORKSPACE_CREATED: { icon: <GroupIcon />, color: '#0F766E' },
   PROJECT_CREATED: { icon: <ProjectIcon />, color: '#0EA5E9' },
   PROJECT_UPDATED: { icon: <EditIcon />, color: '#F59E0B' },
   PROJECT_DELETED: { icon: <DeleteIcon />, color: '#EF4444' },
@@ -53,6 +53,7 @@ const typeIcons = {
   COMMENT_CREATED: { icon: <CommentIcon />, color: '#06B6D4' },
   WORKSPACE_MEMBER_ADDED: { icon: <GroupIcon />, color: '#22C55E' },
   WORKSPACE_MEMBER_ROLE_CHANGED: { icon: <GroupIcon />, color: '#F59E0B' },
+  WORKSPACE_INVITATION_SENT: { icon: <GroupIcon />, color: '#0F766E' },
 };
 
 export default function NotificationPage() {
@@ -78,6 +79,7 @@ export default function NotificationPage() {
     } finally { setLoading(false); }
   }, [user, page]);
 
+  // oxlint-disable-next-line react/set-state-in-effect -- tải dữ liệu theo trang hiện tại
   useEffect(() => { fetch(); }, [fetch]);
 
   useEffect(() => {
@@ -106,19 +108,19 @@ export default function NotificationPage() {
     if (notif.link) navigate(notif.link);
   };
 
-  const getIcon = (type) => typeIcons[type] || { icon: <NotificationsIcon />, color: '#94A3B8' };
+  const getIcon = (type) => typeIcons[type] || { icon: <NotificationsIcon />, color: '#84918D' };
 
   return (
     <Box sx={{ maxWidth: 720, mx: 'auto' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-        <IconButton onClick={() => navigate('/')} size="small" sx={{ bgcolor: '#F8FAFC', borderRadius: 2 }}>
-          <BackIcon sx={{ fontSize: 20, color: '#64748B' }} />
+        <IconButton onClick={() => navigate('/')} size="small" sx={{ bgcolor: '#F7FAF8', borderRadius: 2 }}>
+          <BackIcon sx={{ fontSize: 20, color: '#66736F' }} />
         </IconButton>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h4" sx={{ color: '#0F172A' }}>Notifications</Typography>
+          <Typography variant="h4" sx={{ color: '#17201F' }}>Notifications</Typography>
         </Box>
         <Button startIcon={<DoneAllIcon />} onClick={handleMarkAllAsRead} size="small"
-          sx={{ color: '#3B82F6', fontWeight: 600, textTransform: 'none' }}>
+          sx={{ color: '#0F766E', fontWeight: 600, textTransform: 'none' }}>
           Mark all read
         </Button>
       </Box>
@@ -133,26 +135,26 @@ export default function NotificationPage() {
         <EmptyState icon={<NotificationsIcon sx={{ fontSize: 36 }} />} title="No notifications" description="You're all caught up!" />
       ) : (
         <>
-          <List disablePadding sx={{ bgcolor: '#FFFFFF', borderRadius: 3, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+          <List disablePadding sx={{ bgcolor: '#FFFFFF', borderRadius: 3, overflow: 'hidden', border: '1px solid #DCE4E0' }}>
             {notifications.map((notif, index) => {
               const { icon, color } = getIcon(notif.type);
               return (
                 <Box key={notif.id}>
                   {index > 0 && <Divider component="li" />}
                   <ListItemButton onClick={() => handleClick(notif)}
-                    sx={{ py: 2, px: 2.5, bgcolor: notif.isRead ? 'transparent' : '#F1F5F9', '&:hover': { bgcolor: '#F1F5F9' } }}>
+                    sx={{ py: 2, px: 2.5, bgcolor: notif.isRead ? 'transparent' : '#EEF3F0', '&:hover': { bgcolor: '#EEF3F0' } }}>
                     <ListItemIcon sx={{ minWidth: 44, color }}>{icon}</ListItemIcon>
                     <ListItemText
-                      primary={<Typography variant="body2" fontWeight={notif.isRead ? 500 : 700} sx={{ color: '#0F172A' }}>{notif.title}</Typography>}
+                      primary={<Typography variant="body2" fontWeight={notif.isRead ? 500 : 700} sx={{ color: '#17201F' }}>{notif.title}</Typography>}
                       secondary={
                         <Box>
-                          <Typography variant="caption" sx={{ color: '#94A3B8' }}>{notif.content}</Typography>
-                          <Typography variant="caption" display="block" sx={{ color: '#CBD5E1' }}>{dayjs(notif.createdAt).fromNow()}</Typography>
+                          <Typography variant="caption" sx={{ color: '#84918D' }}>{notif.content}</Typography>
+                          <Typography variant="caption" display="block" sx={{ color: '#CBD5D1' }}>{dayjs(notif.createdAt).fromNow()}</Typography>
                         </Box>
                       } />
                     {!notif.isRead && (
                       <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notif.id); }}
-                        sx={{ color: '#3B82F6' }}>
+                        sx={{ color: '#0F766E' }}>
                         <CheckIcon fontSize="small" />
                       </IconButton>
                     )}
@@ -164,7 +166,7 @@ export default function NotificationPage() {
           {totalPages > 1 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
               <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)}
-                color="primary" sx={{ '& .MuiPaginationItem-root.Mui-selected': { bgcolor: '#3B82F6', color: '#fff' } }} />
+                color="primary" sx={{ '& .MuiPaginationItem-root.Mui-selected': { bgcolor: '#0F766E', color: '#fff' } }} />
             </Box>
           )}
         </>

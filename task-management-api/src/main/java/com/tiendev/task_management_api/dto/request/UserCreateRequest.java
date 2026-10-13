@@ -31,6 +31,7 @@ public class UserCreateRequest {
 	@Size(min = 8)
 	private String password;
 
+	@Size(max = 500, message = "Avatar URL must not exceed 500 characters")
 	private String avatar;
 
 	private Role role;

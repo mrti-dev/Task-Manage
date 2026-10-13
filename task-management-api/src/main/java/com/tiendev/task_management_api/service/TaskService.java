@@ -14,4 +14,6 @@ public interface TaskService {
     PageResponse<TaskResponse> getAll(TaskFilterRequest filter, Pageable pageable);
     TaskResponse update(Long id, TaskUpdateRequest request);
     void delete(Long id);
+    java.util.List<TaskResponse> getCalendarTasks(Long workspaceId, Long projectId, Long assigneeId, com.tiendev.task_management_api.model.enums.TaskPriority priority, com.tiendev.task_management_api.model.enums.TaskStatus status, java.time.LocalDate from, java.time.LocalDate to);
+    java.util.List<TaskResponse> getSubtasks(Long taskId);
 }

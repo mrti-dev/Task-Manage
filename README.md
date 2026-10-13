@@ -22,7 +22,7 @@ Task Manager/
 | Language | Java 25 |
 | Framework | Spring Boot 3.5.6 |
 | Build | Maven |
-| Database | MySQL 8 (Hibernate `ddl-auto=update`) |
+| Database | MySQL 8 (Flyway migrations; production Hibernate `ddl-auto=validate`) |
 | Auth | JWT (access token 24h + refresh token 7d, httpOnly cookie) |
 | Security | Spring Security + JWT filter |
 | Real-time | STOMP over WebSocket (SockJS fallback) |
@@ -42,19 +42,21 @@ Task Manager/
 
 ### Database
 
-**Schema:** `taskmanagement` (auto-generated via `ddl-auto=update`)
+**Schema:** `taskmanagement`; Flyway versioned migrations are in `task-management-api/src/main/resources/db/migration`. Local profile defaults to Hibernate `ddl-auto=update`; production validates the migrated schema.
 
 | Table | Description |
 |-------|-------------|
 | `users` | Platform users (ADMIN/USER roles) |
 | `workspaces` | Top-level organizational unit (soft-delete) |
-| `workspace_members` | User-workspace membership with OWNER/MEMBER roles |
+| `workspace_members` | User-workspace membership with OWNER/ADMIN/MEMBER roles |
 | `projects` | Projects within a workspace (soft-delete) |
 | `tasks` | Tasks within a project (soft-delete) |
 | `comments` | Comments on tasks |
 | `notifications` | User notifications with type + link |
 | `refresh_tokens` | JWT refresh token store |
 | `activity_logs` | Audit trail for entities |
+| `email_verification_codes` | Registration OTP codes (hashed, 5m expiry, 5 attempts max) |
+| `mail_outbox` | Encrypted pending OTP/workspace-access emails and delivery status |
 
 ### API Endpoints
 
@@ -63,9 +65,11 @@ All endpoints are proxied via Vite in development (`localhost:5173` → `localho
 #### Auth (`/api/auth`)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/login` | Login, returns access token + httpOnly cookie |
-| POST | `/api/auth/register` | Register, returns access token + httpOnly cookie |
-| POST | `/api/auth/refresh` | Refresh access token via cookie |
+| POST | `/api/auth/login` | Login (enforces `email_verified=true`; returns `EMAIL_NOT_VERIFIED` if unverified) |
+| POST | `/api/auth/register` | Register with `email_verified=false`, queues 6-digit OTP email (expires in 5m), returns email and expiresAt |
+| POST | `/api/auth/verify-email` | Verify registration OTP (max 5 attempts), marks user verified, returns access token + httpOnly refresh cookie |
+| POST | `/api/auth/resend-verification` | Resend OTP with 60s cooldown, invalidates old codes, returns the same response for all email/account states |
+| POST | `/api/auth/refresh` | Refresh access token via cookie for verified accounts |
 | POST | `/api/auth/logout` | Revoke refresh token, clear cookie |
 
 #### Users (`/api/users`)
@@ -82,6 +86,11 @@ All endpoints are proxied via Vite in development (`localhost:5173` → `localho
 | GET | `/api/workspaces/{id}` | Get workspace by ID |
 | PUT | `/api/workspaces/{id}` | Update workspace (OWNER) |
 | DELETE | `/api/workspaces/{id}` | Soft-delete workspace (OWNER) |
+| POST | `/api/workspaces/{id}/transfer-owner` | Transfer ownership to another member |
+| GET | `/api/workspaces/{id}/dashboard` | Progress, workload and overdue summary; optional project/date filters |
+| POST/GET | `/api/workspaces/{id}/invitations` | Add an existing account directly to a workspace; list access-notification history |
+
+Workspace access notifications can be resent at `/api/workspace-invitations/{id}/resend`. The member is added immediately; the in-app notification and encrypted email payload are saved in the same transaction. A background worker starts sending after commit; polling every second recovers missed wakeups. Failed emails are retried. API success means queued, not delivered.
 
 #### Workspace Members (`/api/workspace-members`)
 | Method | Endpoint | Description |
@@ -108,6 +117,16 @@ All endpoints are proxied via Vite in development (`localhost:5173` → `localho
 | GET | `/api/tasks/{id}` | Get by ID |
 | PUT | `/api/tasks/{id}` | Update |
 | DELETE | `/api/tasks/{id}` | Soft-delete |
+
+#### Task enhancements
+
+| Base path | Behavior |
+|-----------|----------|
+| `/api/tasks/{taskId}/checklist` | Create/list/update/delete/reorder checklist items |
+| `/api/tasks/{taskId}/dependencies` | Add/list/remove task dependencies |
+| `/api/workspaces/{workspaceId}/tags` and `/api/tasks/{taskId}/tags/{tagId}` | Manage workspace tags and assign/remove them on tasks |
+| `/api/search` | Search tasks/projects/workspaces visible to the current user |
+| `/api/saved-filters` | Create/list/rename/delete the current user's saved filters |
 
 #### Comments (`/api/comments`)
 | Method | Endpoint | Description |
@@ -137,7 +156,7 @@ All endpoints are proxied via Vite in development (`localhost:5173` → `localho
 | Enum | Values |
 |------|--------|
 | `Role` | `ADMIN`, `USER` |
-| `WorkspaceRole` | `OWNER`, `MEMBER` |
+| `WorkspaceRole` | `OWNER`, `ADMIN`, `MEMBER` |
 | `TaskStatus` | `TODO`, `IN_PROGRESS`, `DONE` |
 | `TaskPriority` | `LOW`, `MEDIUM`, `HIGH`, `URGENT` |
 | `ProjectStatus` | `PLANNING`, `ACTIVE`, `COMPLETED`, `ARCHIVED` |
@@ -204,9 +223,10 @@ task-management-ui/
 ### Frontend Features
 
 - **Auth:** JWT-based login/register, automatic token refresh with request queuing during refresh
-- **Workspaces:** CRUD, member management with OWNER/MEMBER roles, settings
+- **Workspaces:** CRUD, immediate member addition, ownership transfer, member management with OWNER/ADMIN/MEMBER roles
 - **Projects:** Kanban-style board, task table with priority/status/assignee, real-time updates
 - **Tasks:** Detail modal with comments, claim, assign, status change, STOMP-driven real-time comments
+- **Productivity:** Calendar, deadline reminders, personal task filtering, saved filters, checklist, tags, dependencies, workspace dashboard
 - **Notifications:** Real-time push via WebSocket, unread badge, paginated history, mark read
 - **Routing:** Protected routes (redirect to login), nested layouts, URL-driven task detail modal
 - **UI:** Fully responsive, custom MUI theme with 25+ component overrides, loading skeletons, empty states
@@ -270,11 +290,11 @@ The app starts at `http://localhost:5173`. Vite proxies `/api` and `/ws` to `loc
 | `MYSQL_DATABASE` | `taskmanagement` | Database name |
 | `MYSQL_USER` | `root` | Database user |
 | `MYSQL_PASSWORD` | `123456` | Database password |
-
-JWT configuration in `application.properties` (not env vars currently):
-- `jwt.secret` — HMAC-SHA signing key
-- `jwt.access-token-expiration` — 86400000ms (24h)
-- `jwt.refresh-token-expiration` — 604800000ms (7d)
+| `JWT_SECRET` | *(required in prod)* | JWT HMAC-SHA signing key |
+| `MAIL_USERNAME` | — | Gmail account address for SMTP (`smtp.gmail.com:587`) |
+| `MAIL_APP_PASSWORD` | — | Google App Password (not account password) |
+| `MAIL_OUTBOX_KEY` | *(required)* | Secret of at least 32 characters for encrypted queued email payloads; retain it while pending emails exist |
+| `FRONTEND_URL` | `http://localhost:5173` | Frontend origin for workspace links in access notices |
 
 ### Frontend
 All API calls are proxied via Vite in development. In production, configure `BASE_URL` in `src/api/axiosClient.js`.

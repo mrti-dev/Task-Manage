@@ -4,6 +4,7 @@ import com.tiendev.task_management_api.dto.UserResponse;
 import com.tiendev.task_management_api.dto.WorkspaceMemberResponse;
 import com.tiendev.task_management_api.dto.request.WorkspaceMemberCreateRequest;
 import com.tiendev.task_management_api.dto.request.WorkspaceMemberUpdateRequest;
+import com.tiendev.task_management_api.event.WorkspaceMemberAddedEvent;
 import com.tiendev.task_management_api.exception.BusinessException;
 import com.tiendev.task_management_api.exception.InvalidOperationException;
 import com.tiendev.task_management_api.exception.ResourceAlreadyExistsException;
@@ -22,6 +23,7 @@ import com.tiendev.task_management_api.service.ActivityLogService;
 import com.tiendev.task_management_api.service.NotificationService;
 import com.tiendev.task_management_api.service.WorkspaceMemberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -40,13 +42,18 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final ActivityLogService activityLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public WorkspaceMemberResponse create(WorkspaceMemberCreateRequest request) {
         Workspace workspace = workspaceRepository.findById(request.getWorkspaceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found with id: " + request.getWorkspaceId()));
-        validateOwner(request.getWorkspaceId());
+        validateOwnerOrAdmin(request.getWorkspaceId());
+
+        if (request.getRole() == WorkspaceRole.OWNER) {
+            throw new InvalidOperationException("Cannot add member directly as OWNER. Use transfer ownership instead.");
+        }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
@@ -58,22 +65,17 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
         WorkspaceMember member = new WorkspaceMember();
         member.setWorkspace(workspace);
         member.setUser(user);
-        member.setRole(request.getRole());
+        member.setRole(request.getRole() != null ? request.getRole() : WorkspaceRole.MEMBER);
 
         member = workspaceMemberRepository.save(member);
 
         Long currentUserId = getCurrentUserId();
 
-        notificationService.createNotification(
-                "Bạn đã được thêm vào workspace: " + workspace.getName(),
-                "Bạn đã được thêm vào workspace \"" + workspace.getName() + "\" với vai trò " + request.getRole() + ".",
-                NotificationType.valueOf("WORKSPACE_MEMBER_ADDED"),
-                user.getId(),
-                currentUserId,
-                null,
-                null,
-                workspace.getId()
-        );
+        User inviter = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + currentUserId));
+        eventPublisher.publishEvent(new WorkspaceMemberAddedEvent(
+                user.getId(), currentUserId, workspace.getId(), user.getEmail(), inviter.getUsername(),
+                workspace.getName(), member.getRole()));
 
         activityLogService.log(EntityType.WORKSPACE_MEMBER, member.getId(), ActivityAction.MEMBER_ADDED,
                 null, null, user.getUsername(), currentUserId, workspace.getId());
@@ -86,6 +88,10 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
     public WorkspaceMemberResponse getById(Long id) {
         WorkspaceMember member = workspaceMemberRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkspaceMember not found with id: " + id));
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(
+                member.getWorkspace().getId(), getCurrentUserId())) {
+            throw new ResourceNotFoundException("WorkspaceMember not found with id: " + id);
+        }
         return toWorkspaceMemberResponse(member);
     }
 
@@ -104,10 +110,21 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
     public WorkspaceMemberResponse update(Long id, WorkspaceMemberUpdateRequest request) {
         WorkspaceMember member = workspaceMemberRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkspaceMember not found with id: " + id));
-        validateOwner(member.getWorkspace().getId());
+        validateOwnerOrAdmin(member.getWorkspace().getId());
+
+        Long currentUserId = getCurrentUserId();
+        boolean isOwner = workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(
+                member.getWorkspace().getId(), currentUserId, WorkspaceRole.OWNER);
 
         WorkspaceRole oldRole = member.getRole();
         WorkspaceRole newRole = request.getRole();
+
+        if (newRole == WorkspaceRole.OWNER) {
+            throw new InvalidOperationException("Cannot assign OWNER role via update. Use transfer ownership instead.");
+        }
+        if (oldRole == WorkspaceRole.OWNER && !isOwner) {
+            throw new InvalidOperationException("Only workspace owner can change owner role.");
+        }
 
         if (oldRole == WorkspaceRole.OWNER && newRole != WorkspaceRole.OWNER) {
             long ownerCount = workspaceMemberRepository.countByWorkspaceIdAndRole(
@@ -121,14 +138,12 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
         member.setRole(newRole);
         member = workspaceMemberRepository.save(member);
 
-        Long currentUserId = getCurrentUserId();
-
         if (oldRole != newRole) {
             notificationService.createNotification(
                     "Vai trò của bạn đã thay đổi trong workspace: " + member.getWorkspace().getName(),
                     "Vai trò của bạn trong workspace \"" + member.getWorkspace().getName()
                             + "\" đã thay đổi từ " + oldRole + " thành " + newRole + ".",
-                    NotificationType.valueOf("WORKSPACE_MEMBER_ROLE_CHANGED"),
+                    NotificationType.WORKSPACE_MEMBER_ROLE_CHANGED,
                     member.getUser().getId(),
                     currentUserId,
                     null,
@@ -148,15 +163,10 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
     public void delete(Long id) {
         WorkspaceMember member = workspaceMemberRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkspaceMember not found with id: " + id));
-        validateOwner(member.getWorkspace().getId());
+        validateOwnerOrAdmin(member.getWorkspace().getId());
 
         if (member.getRole() == WorkspaceRole.OWNER) {
-            long ownerCount = workspaceMemberRepository.countByWorkspaceIdAndRole(
-                    member.getWorkspace().getId(), WorkspaceRole.OWNER);
-            if (ownerCount <= 1) {
-                throw new BusinessException(
-                        "Cannot remove the last owner. Workspace must have at least one owner.");
-            }
+            throw new InvalidOperationException("Cannot remove workspace owner.");
         }
 
         Long currentUserId = getCurrentUserId();
@@ -182,14 +192,12 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
                 .collect(Collectors.toSet());
     }
 
-    private void validateOwner(Long workspaceId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Long currentUserId = Long.valueOf(auth.getName());
-        boolean isOwner = workspaceMemberRepository.findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER)
-                .filter(owner -> owner.getUser().getId().equals(currentUserId))
-                .isPresent();
-        if (!isOwner) {
-            throw new InvalidOperationException("Only workspace owner can perform this action.");
+    private void validateOwnerOrAdmin(Long workspaceId) {
+        Long currentUserId = getCurrentUserId();
+        boolean authorized = workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRoleIn(
+                workspaceId, currentUserId, List.of(WorkspaceRole.OWNER, WorkspaceRole.ADMIN));
+        if (!authorized) {
+            throw new InvalidOperationException("Only workspace owner or admin can perform this action.");
         }
     }
 

@@ -9,7 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Set;
 
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
-    Page<ActivityLog> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(EntityType entityType, Long entityId, Pageable pageable);
+    Page<ActivityLog> findByWorkspaceIdInAndEntityTypeAndEntityIdOrderByCreatedAtDesc(
+            Set<Long> workspaceIds, EntityType entityType, Long entityId, Pageable pageable);
     Page<ActivityLog> findByWorkspaceIdInOrderByCreatedAtDesc(Set<Long> workspaceIds, Pageable pageable);
     Page<ActivityLog> findByWorkspaceIdAndEntityTypeAndEntityIdOrderByCreatedAtDesc(Long workspaceId, EntityType entityType, Long entityId, Pageable pageable);
 }

@@ -15,11 +15,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaskFilterRequest {
+    private Long workspaceId;
     private Long projectId;
     private String title;
     private TaskPriority priority;
     private TaskStatus status;
     private Long assigneeId;
+    private Long tagId;
+    private Boolean overdue;
     private LocalDate deadlineFrom;
     private LocalDate deadlineTo;
     private LocalDateTime createdAtFrom;

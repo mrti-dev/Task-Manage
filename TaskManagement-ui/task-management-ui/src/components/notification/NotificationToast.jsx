@@ -9,11 +9,12 @@ export default function NotificationToast() {
   const handleClick = () => {
     if (!toast) return;
     if (!toast.isRead) markAsRead(toast.id);
-    if (toast.link) {
+    const target = toast.link;
+    if (target) {
       if (toast.type === 'TASK_DELETED') {
-        navigate(toast.link.substring(0, toast.link.lastIndexOf('/tasks/')));
+        navigate(target.substring(0, target.lastIndexOf('/tasks/')));
       } else {
-        navigate(toast.link);
+        navigate(target);
       }
     }
     setToast(null);
@@ -35,14 +36,14 @@ export default function NotificationToast() {
           borderRadius: 3,
           minWidth: 340,
           cursor: 'pointer',
-          bgcolor: '#0F172A',
-          '& .MuiAlert-icon': { color: '#3B82F6' },
+          bgcolor: '#17201F',
+          '& .MuiAlert-icon': { color: '#0F766E' },
         }}
       >
         <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#FFFFFF' }}>
           {toast?.title || ''}
         </Typography>
-        <Typography variant="body2" noWrap sx={{ maxWidth: 280, color: '#DBEAFE' }}>
+        <Typography variant="body2" noWrap sx={{ maxWidth: 280, color: '#D9F3ED' }}>
           {toast?.content || ''}
         </Typography>
       </Alert>

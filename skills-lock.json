@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "ui-ux-pro-max": {
+      "source": "terminalskills/skills",
+      "sourceType": "github",
+      "skillPath": "skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "708376c2d54f54ed303fe2ca23cf86ca68bb523f64af18e3da39cafb7f15b7b6"
+    }
+  }
+}

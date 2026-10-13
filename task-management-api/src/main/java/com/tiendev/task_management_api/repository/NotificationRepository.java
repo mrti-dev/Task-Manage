@@ -1,6 +1,7 @@
 package com.tiendev.task_management_api.repository;
 
 import com.tiendev.task_management_api.model.Notification;
+import com.tiendev.task_management_api.model.enums.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     Page<Notification> findByReceiverIdAndIsReadFalseOrderByCreatedAtDesc(Long receiverId, Pageable pageable);
 
     long countByReceiverIdAndIsReadFalse(Long receiverId);
+
+    boolean existsByTaskIdAndReceiverIdAndTypeAndCreatedAtAfter(
+            Long taskId, Long receiverId, NotificationType type, java.time.LocalDateTime after);
 }

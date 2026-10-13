@@ -34,6 +34,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 	private final WorkspaceRepository workspaceRepository;
 	private final WorkspaceMemberRepository workspaceMemberRepository;
 	private final UserRepository userRepository;
+	private final com.tiendev.task_management_api.service.NotificationService notificationService;
+	private final com.tiendev.task_management_api.service.ActivityLogService activityLogService;
 
 	@Override
 	@Transactional
@@ -117,6 +119,56 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 		workspaceRepository.save(workspace);
 	}
 
+	@Override
+	@Transactional
+	public WorkspaceResponse transferOwnership(Long id, com.tiendev.task_management_api.dto.request.TransferOwnershipRequest request) {
+		Workspace workspace = workspaceRepository.findByIdForUpdate(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Workspace not found with id: " + id));
+		if (!workspace.isActive()) {
+			throw new ResourceNotFoundException("Workspace not found with id: " + id);
+		}
+		Long currentUserId = getCurrentUserId();
+		validateOwner(workspace.getId());
+
+		if (currentUserId.equals(request.getNewOwnerId())) {
+			throw new InvalidOperationException("Cannot transfer ownership to yourself.");
+		}
+
+		WorkspaceMember currentOwnerMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(id, currentUserId)
+				.orElseThrow(() -> new ResourceNotFoundException("Current owner member not found."));
+
+		WorkspaceMember targetMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(id, request.getNewOwnerId())
+				.orElseThrow(() -> new ResourceNotFoundException("Target user is not a member of this workspace."));
+
+		currentOwnerMember.setRole(WorkspaceRole.ADMIN);
+		targetMember.setRole(WorkspaceRole.OWNER);
+
+		workspaceMemberRepository.save(currentOwnerMember);
+		workspaceMemberRepository.save(targetMember);
+
+		long ownerCount = workspaceMemberRepository.countByWorkspaceIdAndRole(id, WorkspaceRole.OWNER);
+		if (ownerCount != 1) {
+			throw new InvalidOperationException("Workspace must have exactly one owner after transfer.");
+		}
+
+		notificationService.createNotification(
+				"Bạn đã trở thành Owner của workspace: " + workspace.getName(),
+				"Quyền sở hữu workspace \"" + workspace.getName() + "\" đã được chuyển giao cho bạn.",
+				com.tiendev.task_management_api.model.enums.NotificationType.WORKSPACE_OWNER_TRANSFERRED,
+				targetMember.getUser().getId(),
+				currentUserId,
+				null,
+				null,
+				workspace.getId()
+		);
+
+		activityLogService.log(com.tiendev.task_management_api.model.enums.EntityType.WORKSPACE, id,
+				com.tiendev.task_management_api.model.enums.ActivityAction.OWNER_TRANSFERRED,
+				"owner", currentUserId.toString(), targetMember.getUser().getId().toString(), currentUserId, id);
+
+		return toWorkspaceResponse(workspace);
+	}
+
 	private Long getCurrentUserId() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		return Long.valueOf(auth.getName());
@@ -131,9 +183,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
 	private void validateOwner(Long workspaceId) {
 		Long currentUserId = getCurrentUserId();
-		boolean isOwner = workspaceMemberRepository.findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER)
-				.filter(owner -> owner.getUser().getId().equals(currentUserId))
-				.isPresent();
+		boolean isOwner = workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, currentUserId, WorkspaceRole.OWNER);
 		if (!isOwner) {
 			throw new InvalidOperationException("Only workspace owner can perform this action.");
 		}

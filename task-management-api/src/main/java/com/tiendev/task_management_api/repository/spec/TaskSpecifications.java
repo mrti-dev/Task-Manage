@@ -30,6 +30,18 @@ public class TaskSpecifications {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            if (filter.getWorkspaceId() != null) {
+                predicates.add(cb.equal(root.get("project").get("workspace").get("id"), filter.getWorkspaceId()));
+            }
+            if (filter.getTagId() != null) {
+                jakarta.persistence.criteria.Join<Object, Object> tagJoin = root.join("tags");
+                predicates.add(cb.equal(tagJoin.get("id"), filter.getTagId()));
+            }
+            if (Boolean.TRUE.equals(filter.getOverdue())) {
+                predicates.add(cb.isNotNull(root.get("deadline")));
+                predicates.add(cb.lessThan(root.get("deadline"), java.time.LocalDate.now()));
+                predicates.add(cb.notEqual(root.get("status"), com.tiendev.task_management_api.model.enums.TaskStatus.DONE));
+            }
             if (filter.getProjectId() != null) {
                 predicates.add(cb.equal(root.get("project").get("id"), filter.getProjectId()));
             }

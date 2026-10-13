@@ -28,14 +28,21 @@ public class JwtUtil {
     }
 
     public String generateAccessToken(Long userId, String role) {
+        return generateAccessToken(userId, role, null);
+    }
+
+    public String generateAccessToken(Long userId, String role, String email) {
         Date now = new Date();
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + accessTokenExpiration))
-                .signWith(secretKey)
-                .compact();
+                .signWith(secretKey);
+        if (email != null) {
+            builder.claim("email", email);
+        }
+        return builder.compact();
     }
 
     public String generateRefreshToken() {

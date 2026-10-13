@@ -53,6 +53,8 @@ public class TaskServiceImpl implements TaskService {
 	private final WorkspaceMemberRepository workspaceMemberRepository;
 	private final NotificationService notificationService;
 	private final ActivityLogService activityLogService;
+	private final com.tiendev.task_management_api.repository.TagRepository tagRepository;
+	private final com.tiendev.task_management_api.service.TaskDependencyService taskDependencyService;
 
 	@Override
 	@Transactional
@@ -79,6 +81,19 @@ public class TaskServiceImpl implements TaskService {
 		task.setStatus(request.getStatus() != null ? request.getStatus() : TaskStatus.TODO);
 		task.setAssignee(assignee);
 		task.setDeadline(request.getDeadline());
+
+		if (request.getParentId() != null) {
+			Task parent = taskRepository.findById(request.getParentId()).orElseThrow(
+					() -> new ResourceNotFoundException("Parent task not found with id: " + request.getParentId()));
+			if (parent.getParentTask() != null) {
+				throw new InvalidOperationException("Subtasks cannot be nested more than 1 level");
+			}
+			task.setParentTask(parent);
+		}
+
+		if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+			task.setTags(new java.util.HashSet<>(tagRepository.findAllById(request.getTagIds())));
+		}
 
 		validateDeadline(task);
 
@@ -154,9 +169,7 @@ public class TaskServiceImpl implements TaskService {
 		}
 		Long workspaceId = task.getProject().getWorkspace().getId();
 		validateMembership(workspaceId);
-		boolean isOwner = workspaceMemberRepository.findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER)
-				.filter(owner -> owner.getUser().getId().equals(getCurrentUserId()))
-				.isPresent();
+		boolean isOwner = workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, getCurrentUserId(), WorkspaceRole.OWNER);
 
 		String oldTitle = task.getTitle();
 		String oldDescription = task.getDescription();
@@ -177,7 +190,13 @@ public class TaskServiceImpl implements TaskService {
 			task.setPriority(request.getPriority());
 		}
 		if (request.getStatus() != null) {
+			if (request.getStatus() == TaskStatus.DONE && !oldStatus.equals(TaskStatus.DONE)) {
+				taskDependencyService.validateCanTransitionToDone(task.getId());
+			}
 			task.setStatus(request.getStatus());
+		}
+		if (request.getTagIds() != null) {
+			task.setTags(new java.util.HashSet<>(tagRepository.findAllById(request.getTagIds())));
 		}
 		if (request.isUnassign()) {
 			if (!isOwner) throw new InvalidOperationException("Only workspace owner can unassign a task.");
@@ -193,7 +212,12 @@ public class TaskServiceImpl implements TaskService {
 			validateMemberInWorkspace(assignee.getId(), workspaceId);
 			task.setAssignee(assignee);
 		}
-		if (request.getDeadline() != null) {
+		if (request.isClearDeadline() && request.getDeadline() != null) {
+			throw new BusinessException("Cannot provide both deadline and clearDeadline flag");
+		}
+		if (request.isClearDeadline()) {
+			task.setDeadline(null);
+		} else if (request.getDeadline() != null) {
 			task.setDeadline(request.getDeadline());
 			validateDeadline(task);
 		}
@@ -212,7 +236,8 @@ public class TaskServiceImpl implements TaskService {
 		boolean taskUnassigned = request.isUnassign() && oldAssigneeId != null;
 		boolean titleChanged = request.getTitle() != null && !request.getTitle().equals(oldTitle);
 		boolean descriptionChanged = request.getDescription() != null && !request.getDescription().equals(oldDescription);
-		boolean deadlineChanged = request.getDeadline() != null && !request.getDeadline().equals(oldDeadline);
+		boolean deadlineChanged = (request.isClearDeadline() && oldDeadline != null)
+				|| (request.getDeadline() != null && !request.getDeadline().equals(oldDeadline));
 
 		Long skipUserId;
 
@@ -283,6 +308,16 @@ public class TaskServiceImpl implements TaskService {
 					task.getId(), task.getProject().getId());
 		}
 
+		if (deadlineChanged && assigneeUser != null) {
+			notificationService.createNotification(
+					"Hạn chót nhiệm vụ đã thay đổi: " + task.getTitle(),
+					"Hạn chót của nhiệm vụ \"" + task.getTitle() + "\" đã được thay đổi thành "
+							+ (task.getDeadline() != null ? task.getDeadline() : "không có hạn") + ".",
+					NotificationType.TASK_DEADLINE_CHANGED,
+					assigneeUser.getId(), currentUserId, task.getId(),
+					task.getProject().getId(), workspaceId);
+		}
+
 		if (titleChanged || descriptionChanged || deadlineChanged) {
 			sendTaskNotificationToMembers(workspaceId, currentUserId, null,
 					NotificationType.TASK_UPDATED,
@@ -320,7 +355,7 @@ public class TaskServiceImpl implements TaskService {
 			activityLogService.log(EntityType.TASK, task.getId(), ActivityAction.UPDATED,
 					"deadline",
 					oldDeadline != null ? oldDeadline.toString() : null,
-					request.getDeadline() != null ? request.getDeadline().toString() : null,
+					request.isClearDeadline() ? null : request.getDeadline().toString(),
 					currentUserId, workspaceId);
 		}
 
@@ -392,9 +427,7 @@ public class TaskServiceImpl implements TaskService {
 
 	private void validateOwner(Long workspaceId) {
 		Long currentUserId = getCurrentUserId();
-		boolean isOwner = workspaceMemberRepository.findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER)
-				.filter(owner -> owner.getUser().getId().equals(currentUserId))
-				.isPresent();
+		boolean isOwner = workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, currentUserId, WorkspaceRole.OWNER);
 		if (!isOwner) {
 			throw new InvalidOperationException("Only workspace owner can perform this action.");
 		}
@@ -425,13 +458,13 @@ public class TaskServiceImpl implements TaskService {
 
 	private void sendTaskNotificationToMembers(Long workspaceId, Long senderId, Long skipUserId,
 			NotificationType type, String title, String content, Long taskId, Long projectId) {
-		User owner = getWorkspaceOwner(workspaceId);
-		Long ownerId = owner != null ? owner.getId() : null;
+		Set<Long> ownerIds = workspaceMemberRepository.findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER)
+				.stream().map(m -> m.getUser().getId()).collect(Collectors.toSet());
 		List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
 		for (WorkspaceMember member : members) {
 			Long memberUserId = member.getUser().getId();
 			if (memberUserId.equals(senderId) || memberUserId.equals(skipUserId)) {
-				if (!memberUserId.equals(ownerId)) {
+				if (!ownerIds.contains(memberUserId)) {
 					continue;
 				}
 			}
@@ -442,9 +475,52 @@ public class TaskServiceImpl implements TaskService {
 		}
 	}
 
-	private User getWorkspaceOwner(Long workspaceId) {
-		return workspaceMemberRepository.findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.OWNER)
-				.map(WorkspaceMember::getUser).orElse(null);
+	@Override
+	@Transactional(readOnly = true)
+	public java.util.List<TaskResponse> getCalendarTasks(Long workspaceId, Long projectId, Long assigneeId,
+			TaskPriority priority, TaskStatus status, LocalDate from, LocalDate to) {
+		if (from == null || to == null) {
+			throw new InvalidOperationException("Both 'from' and 'to' dates are required");
+		}
+		if (from.isAfter(to)) {
+			throw new InvalidOperationException("'from' date must be before or equal to 'to' date");
+		}
+		long days = java.time.temporal.ChronoUnit.DAYS.between(from, to);
+		if (days > 366) {
+			throw new InvalidOperationException("Date range cannot exceed 366 days");
+		}
+
+		Set<Long> memberWorkspaceIds = getMemberWorkspaceIds();
+		if (memberWorkspaceIds.isEmpty()) {
+			return java.util.Collections.emptyList();
+		}
+
+		java.util.Collection<Long> queryWorkspaceIds;
+		if (workspaceId != null) {
+			if (!memberWorkspaceIds.contains(workspaceId)) {
+				throw new InvalidOperationException("You do not have access to this workspace");
+			}
+			queryWorkspaceIds = java.util.Collections.singleton(workspaceId);
+		} else {
+			queryWorkspaceIds = memberWorkspaceIds;
+		}
+
+		List<Task> tasks = taskRepository.findCalendarTasks(
+				queryWorkspaceIds, from, to, projectId, assigneeId, priority, status);
+
+		return tasks.stream().map(this::toTaskResponse).toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public java.util.List<TaskResponse> getSubtasks(Long taskId) {
+		Task parent = taskRepository.findById(taskId)
+				.orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+		validateMemberInWorkspace(getCurrentUserId(), parent.getProject().getWorkspace().getId());
+		return parent.getSubtasks().stream()
+				.filter(Task::isActive)
+				.map(this::toTaskResponse)
+				.toList();
 	}
 
 	private TaskResponse toTaskResponse(Task task) {
@@ -455,10 +531,31 @@ public class TaskServiceImpl implements TaskService {
 					.avatar(task.getAssignee().getAvatar()).role(task.getAssignee().getRole()).build();
 		}
 
+		LocalDate today = LocalDate.now();
+		boolean overdue = task.getDeadline() != null && task.getDeadline().isBefore(today) && task.getStatus() != TaskStatus.DONE;
+		boolean dueSoon = task.getDeadline() != null && !task.getDeadline().isBefore(today) && !task.getDeadline().isAfter(today.plusDays(2)) && task.getStatus() != TaskStatus.DONE;
+
+		Long parentTaskId = task.getParentTask() != null ? task.getParentTask().getId() : null;
+		int subtaskCount = task.getSubtasks() != null ? task.getSubtasks().size() : 0;
+		int completedSubtaskCount = task.getSubtasks() != null ? (int) task.getSubtasks().stream().filter(s -> s.getStatus() == TaskStatus.DONE).count() : 0;
+
+		java.util.List<com.tiendev.task_management_api.dto.TagResponse> tagList = task.getTags() != null ? task.getTags().stream()
+				.map(t -> com.tiendev.task_management_api.dto.TagResponse.builder().id(t.getId()).workspaceId(t.getWorkspace().getId()).name(t.getName()).color(t.getColor()).build())
+				.toList() : java.util.Collections.emptyList();
+
+		java.util.List<com.tiendev.task_management_api.dto.ChecklistItemResponse> checklistList = task.getChecklistItems() != null ? task.getChecklistItems().stream()
+				.sorted(java.util.Comparator.comparingInt(com.tiendev.task_management_api.model.TaskChecklistItem::getPosition))
+				.map(c -> com.tiendev.task_management_api.dto.ChecklistItemResponse.builder().id(c.getId()).taskId(task.getId()).title(c.getTitle()).completed(c.isCompleted()).position(c.getPosition()).createdAt(c.getCreatedAt()).build())
+				.toList() : java.util.Collections.emptyList();
+
 		return TaskResponse.builder().id(task.getId()).workspaceId(task.getProject().getWorkspace().getId())
 				.projectId(task.getProject().getId()).projectName(task.getProject().getName()).title(task.getTitle())
 				.description(task.getDescription()).priority(task.getPriority()).status(task.getStatus())
-				.assignee(assigneeResponse).deadline(task.getDeadline()).commentCount(task.getComments().size())
+				.assignee(assigneeResponse).deadline(task.getDeadline())
+				.overdue(overdue).dueSoon(dueSoon)
+				.parentTaskId(parentTaskId).subtaskCount(subtaskCount).completedSubtaskCount(completedSubtaskCount)
+				.tags(tagList).checklist(checklistList)
+				.commentCount(task.getComments() != null ? task.getComments().size() : 0)
 				.createdAt(task.getCreatedAt()).updatedAt(task.getUpdatedAt()).build();
 	}
 }

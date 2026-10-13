@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   TextField,
@@ -16,6 +16,10 @@ import { useAuth } from '../../contexts/AuthContext';
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirectUrl = searchParams.get('redirect') || location.state?.redirect || null;
+
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -56,12 +60,21 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register({
-        username: form.username,
-        email: form.email,
+      const res = await register({
+        username: form.username.trim(),
+        email: form.email.trim().toLowerCase(),
         password: form.password,
       });
-      navigate('/', { replace: true });
+      const registeredEmail = res?.email || form.email.trim().toLowerCase();
+      const expiresAt = res?.expiresAt || null;
+      navigate('/verify-email', {
+        replace: true,
+        state: {
+          email: registeredEmail,
+          expiresAt,
+          redirect: redirectUrl,
+        },
+      });
     } catch (err) {
       const message =
         err.response?.data?.message ||
@@ -75,10 +88,10 @@ export default function RegisterPage() {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 0.5, color: '#0F172A' }}>
+      <Typography variant="h5" sx={{ mb: 0.5, color: '#17201F' }}>
         Create your account
       </Typography>
-      <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
+      <Typography variant="body2" sx={{ color: '#66736F', mb: 3 }}>
         Start managing your tasks effectively
       </Typography>
 
@@ -118,8 +131,9 @@ export default function RegisterPage() {
           onChange={handleChange}
           sx={{ mb: 2 }}
           size="medium"
-          InputProps={{
-            endAdornment: (
+          slotProps={{
+            input: {
+              endAdornment: (
               <InputAdornment position="end">
                 <IconButton
                   onClick={() => setShowPassword(!showPassword)}
@@ -129,7 +143,8 @@ export default function RegisterPage() {
                   {showPassword ? <VisibilityOff /> : <Visibility />}
                 </IconButton>
               </InputAdornment>
-            ),
+              ),
+            },
           }}
         />
         <TextField
@@ -150,10 +165,10 @@ export default function RegisterPage() {
           disabled={loading}
           sx={{
             py: 1.5,
-            fontSize: '0.9375rem',
-            background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+            fontSize: '1.0625rem',
+            background: '#0F766E',
             '&:hover': {
-              background: 'linear-gradient(135deg, #2563EB, #3B82F6)',
+              background: '#115E59',
             },
           }}
         >
@@ -164,14 +179,14 @@ export default function RegisterPage() {
       <Typography
         variant="body2"
         align="center"
-        sx={{ mt: 3, color: '#64748B' }}
+        sx={{ mt: 3, color: '#66736F' }}
       >
         Already have an account?{' '}
         <Link
           component={RouterLink}
-          to="/login"
+          to={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login'}
           underline="hover"
-          sx={{ fontWeight: 600, color: '#3B82F6' }}
+          sx={{ fontWeight: 600, color: '#0F766E' }}
         >
           Sign in
         </Link>

@@ -12,4 +12,5 @@ public interface WorkspaceService {
     List<WorkspaceResponse> getAll();
     WorkspaceResponse update(Long id, WorkspaceUpdateRequest request);
     void delete(Long id);
+    WorkspaceResponse transferOwnership(Long id, com.tiendev.task_management_api.dto.request.TransferOwnershipRequest request);
 }

@@ -12,12 +12,13 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- đồng bộ trạng thái với breakpoint
     if (isMobile) setSidebarOpen(false);
   }, [isMobile]);
 
   return (
     <NotificationProvider>
-      <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F1F5F9' }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
         <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
         <Box
           sx={{
@@ -33,8 +34,10 @@ export default function MainLayout() {
             component="main"
             sx={{
               flex: 1,
-              p: { xs: 2, md: 3 },
+              px: { xs: 4, sm: 6, lg: 8 },
+              py: { xs: 5, md: 7 },
               overflow: 'auto',
+              width: '100%',
             }}
           >
             <Outlet />

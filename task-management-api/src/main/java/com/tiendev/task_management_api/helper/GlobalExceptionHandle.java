@@ -14,6 +14,7 @@ import com.tiendev.task_management_api.exception.BusinessException;
 import com.tiendev.task_management_api.exception.InvalidOperationException;
 import com.tiendev.task_management_api.exception.ResourceAlreadyExistsException;
 import com.tiendev.task_management_api.exception.ResourceNotFoundException;
+import com.tiendev.task_management_api.exception.UnauthorizedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandle {
@@ -30,12 +31,23 @@ public class GlobalExceptionHandle {
 
 	@ExceptionHandler(BusinessException.class)
 	public ResponseEntity<?> handleBusinessException(BusinessException ex) {
-		return ApiResponse.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+		String errorCode = ex.getErrorCode() != null ? ex.getErrorCode() : "BAD_REQUEST";
+		return ApiResponse.error(HttpStatus.BAD_REQUEST, ex.getMessage(), errorCode);
 	}
 
 	@ExceptionHandler(ResourceAlreadyExistsException.class)
 	public ResponseEntity<?> handleAlreadyExists(ResourceAlreadyExistsException ex) {
 		return ApiResponse.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(UnauthorizedException.class)
+	public ResponseEntity<?> handleUnauthorized(UnauthorizedException ex) {
+		return ApiResponse.error(HttpStatus.UNAUTHORIZED, ex.getMessage());
+	}
+
+	@ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+	public ResponseEntity<?> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
+		return ApiResponse.error(HttpStatus.CONFLICT, "Resource conflict or constraint violation");
 	}
 
 	@ExceptionHandler(Exception.class)

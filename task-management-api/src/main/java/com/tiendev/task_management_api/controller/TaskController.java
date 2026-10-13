@@ -36,6 +36,25 @@ public class TaskController {
         return ApiResponse.success(responses);
     }
 
+    @GetMapping("/calendar")
+    public ResponseEntity<ApiResponse<java.util.List<TaskResponse>>> getCalendar(
+            @RequestParam(required = false) Long workspaceId,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) Long assigneeId,
+            @RequestParam(required = false) com.tiendev.task_management_api.model.enums.TaskPriority priority,
+            @RequestParam(required = false) com.tiendev.task_management_api.model.enums.TaskStatus status,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
+        java.util.List<TaskResponse> responses = taskService.getCalendarTasks(workspaceId, projectId, assigneeId, priority, status, from, to);
+        return ApiResponse.success(responses);
+    }
+
+    @GetMapping("/{id}/subtasks")
+    public ResponseEntity<ApiResponse<java.util.List<TaskResponse>>> getSubtasks(@PathVariable Long id) {
+        java.util.List<TaskResponse> responses = taskService.getSubtasks(id);
+        return ApiResponse.success(responses);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TaskResponse>> getById(@PathVariable Long id) {
         TaskResponse response = taskService.getById(id);

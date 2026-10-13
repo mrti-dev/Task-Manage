@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginApi, registerApi, logoutApi, refreshTokenApi } from '../api/authApi';
+import { loginApi, registerApi, logoutApi, refreshTokenApi, verifyEmailApi } from '../api/authApi';
 import { getWorkspaceMembersApi } from '../api/workspaceMemberApi';
-import { setAccessToken, setOnAuthFailed, getAccessToken } from '../api/axiosClient';
+import { setAccessToken, setOnAuthFailed } from '../api/axiosClient';
 
 function decodeJwtPayload(token) {
   try {
@@ -53,6 +53,7 @@ export function AuthProvider({ children }) {
           setUser({
             id: parseInt(payload.sub, 10),
             role: payload.role,
+            email: payload.email,
           });
         }
       } catch {
@@ -75,6 +76,11 @@ export function AuthProvider({ children }) {
 
   const register = async (userData) => {
     const { data } = await registerApi(userData);
+    return data;
+  };
+
+  const verifyEmail = async (verificationData) => {
+    const { data } = await verifyEmailApi(verificationData);
     setAccessToken(data.accessToken);
     setAccessTokenState(data.accessToken);
     setUser(data.user);
@@ -84,7 +90,8 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await logoutApi();
-    } catch {
+    } catch (err) {
+      console.warn('Logout API error:', err?.message);
     } finally {
       setAccessToken(null);
       setAccessTokenState(null);
@@ -99,11 +106,11 @@ export function AuthProvider({ children }) {
       setAccessToken(token);
       setAccessTokenState(token);
       return token;
-    } catch {
+    } catch (err) {
       setAccessToken(null);
       setAccessTokenState(null);
       setUser(null);
-      throw new Error('Refresh failed');
+      throw new Error(err?.response?.data?.message || 'Refresh failed');
     }
   };
 
@@ -113,10 +120,11 @@ export function AuthProvider({ children }) {
       const members = res?.data ?? res;
       if (!Array.isArray(members)) return false;
       const member = members.find(
-        (m) => m.user?.id === user?.id && m.role === 'OWNER'
+        (m) => m.workspaceId === Number(workspaceId) && m.user?.id === user?.id && m.role === 'OWNER'
       );
       return !!member;
-    } catch {
+    } catch (err) {
+      console.warn('Failed to verify owner permission:', err?.message);
       return false;
     }
   };
@@ -129,6 +137,7 @@ export function AuthProvider({ children }) {
         loading,
         login,
         register,
+        verifyEmail,
         logout,
         refresh,
         isOwner,
@@ -139,6 +148,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+// oxlint-disable-next-line react/only-export-components -- hook dùng chung context
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

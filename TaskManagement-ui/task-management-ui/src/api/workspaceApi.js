@@ -9,3 +9,7 @@ export const createWorkspaceApi = (data) => axiosClient.post('/api/workspaces', 
 export const updateWorkspaceApi = (id, data) => axiosClient.put(`/api/workspaces/${id}`, data);
 
 export const deleteWorkspaceApi = (id) => axiosClient.delete(`/api/workspaces/${id}`);
+
+export const transferWorkspaceOwnershipApi = (id, data) =>
+  axiosClient.post(`/api/workspaces/${id}/transfer-owner`, data);
+

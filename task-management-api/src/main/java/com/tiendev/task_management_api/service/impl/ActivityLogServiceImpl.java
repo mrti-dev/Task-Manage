@@ -60,7 +60,8 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     @Transactional(readOnly = true)
     public PageResponse<ActivityLogResponse> getByEntity(EntityType entityType, Long entityId, Pageable pageable) {
         Page<ActivityLog> page = activityLogRepository
-                .findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId, pageable);
+                .findByWorkspaceIdInAndEntityTypeAndEntityIdOrderByCreatedAtDesc(
+                        getMemberWorkspaceIds(), entityType, entityId, pageable);
         return toPageResponse(page);
     }
 
