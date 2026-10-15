@@ -213,7 +213,7 @@ export default function VerifyEmailPage() {
               style: {
                 textAlign: 'center',
                 letterSpacing: '0.4em',
-                fontSize: '1.5rem',
+                fontSize: '1.6875rem',
                 fontWeight: 700,
               },
             },
@@ -233,7 +233,7 @@ export default function VerifyEmailPage() {
             disabled={cooldown > 0 || resending}
             sx={{
               textTransform: 'none',
-              fontSize: '0.8125rem',
+              fontSize: '1rem',
               fontWeight: 600,
               color: cooldown > 0 ? '#9CA3AF' : '#0F766E',
             }}
@@ -253,7 +253,7 @@ export default function VerifyEmailPage() {
           disabled={loading || code.length !== 6 || expirationSeconds <= 0}
           sx={{
             py: 1.5,
-            fontSize: '1.0625rem',
+            fontSize: '1.25rem',
             background: '#0F766E',
             '&:hover': {
               background: '#115E59',

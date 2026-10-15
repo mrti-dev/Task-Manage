@@ -47,49 +47,51 @@ const theme = createTheme({
   spacing: 4,
   typography: {
     fontFamily: '"Aptos", "Segoe UI Variable", "Segoe UI", sans-serif',
+    fontSize: 17,
     h4: {
       fontWeight: 700,
-      fontSize: '2.125rem',
+      fontSize: '2.3125rem',
       lineHeight: 1.25,
       letterSpacing: '-0.02em',
     },
     h5: {
       fontWeight: 700,
-      fontSize: '1.625rem',
+      fontSize: '1.8125rem',
       lineHeight: 1.3,
       letterSpacing: '-0.015em',
     },
     h6: {
       fontWeight: 600,
-      fontSize: '1.25rem',
+      fontSize: '1.4375rem',
       lineHeight: 1.35,
       letterSpacing: '-0.01em',
     },
     subtitle1: {
       fontWeight: 600,
-      fontSize: '1.125rem',
+      fontSize: '1.3125rem',
       letterSpacing: '-0.005em',
     },
     subtitle2: {
       fontWeight: 600,
-      fontSize: '1rem',
+      fontSize: '1.1875rem',
       letterSpacing: '-0.005em',
     },
     body1: {
-      fontSize: '1.125rem',
+      fontSize: '1.3125rem',
       lineHeight: 1.6,
     },
     body2: {
-      fontSize: '1rem',
+      fontSize: '1.1875rem',
       lineHeight: 1.5,
     },
     caption: {
-      fontSize: '0.9375rem',
+      fontSize: '1.125rem',
       lineHeight: 1.4,
       color: '#84918D',
     },
     button: {
       fontWeight: 600,
+      fontSize: '1.1875rem',
       letterSpacing: '0.01em',
     },
   },
@@ -100,7 +102,7 @@ const theme = createTheme({
           padding: '10px !important',
         },
         body: {
-          fontSize: '17px',
+          fontSize: '20px',
           scrollbarWidth: 'thin',
           scrollbarColor: '#CBD5D1 transparent',
           WebkitFontSmoothing: 'antialiased',
@@ -116,7 +118,7 @@ const theme = createTheme({
           borderRadius: 10,
           padding: '8px 16px',
           minHeight: 42,
-          fontSize: '1rem',
+          fontSize: '1.1875rem',
           transition: 'background-color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 120ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1)',
           '&:active': {
             transform: 'scale(0.96)',
@@ -137,11 +139,11 @@ const theme = createTheme({
         },
         sizeSmall: {
           padding: '6px 14px',
-          fontSize: '0.9375rem',
+          fontSize: '1.125rem',
         },
         sizeLarge: {
           padding: '12px 28px',
-          fontSize: '1.0625rem',
+          fontSize: '1.25rem',
         },
       },
     },
@@ -222,7 +224,7 @@ const theme = createTheme({
           },
           '& .MuiFormHelperText-root': {
             fontWeight: 500,
-            fontSize: '0.875rem',
+            fontSize: '1.0625rem',
           },
         },
       },
@@ -232,7 +234,7 @@ const theme = createTheme({
         root: {
           borderRadius: 8,
           fontWeight: 600,
-          fontSize: '0.875rem',
+          fontSize: '1.0625rem',
           height: 28,
           transition: 'all 150ms ease',
         },
@@ -244,7 +246,7 @@ const theme = createTheme({
         },
         sizeSmall: {
           height: 22,
-          fontSize: '0.8125rem',
+          fontSize: '1rem',
         },
       },
     },
@@ -262,7 +264,7 @@ const theme = createTheme({
         root: {
           '& .MuiTableCell-head': {
             fontWeight: 700,
-            fontSize: '0.875rem',
+            fontSize: '1.0625rem',
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
             color: '#66736F',
@@ -287,7 +289,7 @@ const theme = createTheme({
           },
           '& .MuiTableCell-body': {
             padding: '16px 20px',
-            fontSize: '1rem',
+            fontSize: '1.1875rem',
             borderBottomColor: '#EEF3F0',
           },
         },
@@ -298,7 +300,7 @@ const theme = createTheme({
         root: {
           textTransform: 'none',
           fontWeight: 600,
-          fontSize: '1rem',
+          fontSize: '1.1875rem',
           minHeight: 48,
           padding: '8px 20px',
           borderRadius: '8px 8px 0 0',
@@ -370,7 +372,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           fontWeight: 600,
-          fontSize: '1rem',
+          fontSize: '1.1875rem',
         },
       },
     },
@@ -415,7 +417,7 @@ const theme = createTheme({
       styleOverrides: {
         badge: {
           fontWeight: 700,
-          fontSize: '0.8125rem',
+          fontSize: '1rem',
           minWidth: 18,
           height: 18,
         },
@@ -426,7 +428,7 @@ const theme = createTheme({
         tooltip: {
           borderRadius: 8,
           padding: '6px 12px',
-          fontSize: '0.875rem',
+          fontSize: '1.0625rem',
           fontWeight: 500,
           backgroundColor: '#17201F',
         },

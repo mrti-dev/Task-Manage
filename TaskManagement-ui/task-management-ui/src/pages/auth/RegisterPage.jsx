@@ -165,7 +165,7 @@ export default function RegisterPage() {
           disabled={loading}
           sx={{
             py: 1.5,
-            fontSize: '1.0625rem',
+            fontSize: '1.25rem',
             background: '#0F766E',
             '&:hover': {
               background: '#115E59',

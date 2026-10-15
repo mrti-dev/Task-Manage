@@ -325,7 +325,7 @@ export default function CalendarPage() {
         {/* Days of week header */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', bgcolor: '#F3F6F4', borderBottom: '1px solid #E2EBE6' }}>
           {DAYS_OF_WEEK.map((day) => (
-            <Box key={day} sx={{ p: 1.5, textAlign: 'center', fontWeight: 700, fontSize: '0.9375rem', color: '#42504C' }}>
+            <Box key={day} sx={{ p: 1.5, textAlign: 'center', fontWeight: 700, fontSize: '1.125rem', color: '#42504C' }}>
               {day}
             </Box>
           ))}
@@ -368,7 +368,7 @@ export default function CalendarPage() {
                     {dateObj.getDate()}
                   </Typography>
                   {dayTasks.length > 0 && (
-                    <Typography variant="caption" sx={{ color: '#84918D', fontSize: '0.8125rem' }}>
+                    <Typography variant="caption" sx={{ color: '#84918D', fontSize: '1rem' }}>
                       {dayTasks.length} task{dayTasks.length > 1 ? 's' : ''}
                     </Typography>
                   )}
@@ -401,16 +401,16 @@ export default function CalendarPage() {
                             WebkitLineClamp: 1,
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden',
-                            fontSize: '0.875rem',
+                            fontSize: '1.0625rem',
                           }}
                         >
                           {t.title}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
-                          <Typography variant="caption" sx={{ color: '#84918D', fontSize: '0.75rem' }}>
+                          <Typography variant="caption" sx={{ color: '#84918D', fontSize: '0.9375rem' }}>
                             {t.projectName}
                           </Typography>
-                          <Typography variant="caption" fontWeight={700} sx={{ color: colorStyle.text, fontSize: '0.75rem' }}>
+                          <Typography variant="caption" fontWeight={700} sx={{ color: colorStyle.text, fontSize: '0.9375rem' }}>
                             {t.priority}
                           </Typography>
                         </Box>

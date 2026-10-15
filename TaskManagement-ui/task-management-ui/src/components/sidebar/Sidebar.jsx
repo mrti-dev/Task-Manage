@@ -253,7 +253,7 @@ export default function Sidebar({ open, onToggle }) {
               color: '#84918D',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              fontSize: '0.8125rem',
+              fontSize: '1rem',
             }}
           >
             Workspaces
@@ -344,7 +344,7 @@ export default function Sidebar({ open, onToggle }) {
                     px: 1,
                     py: 0.25,
                     borderRadius: 1,
-                    fontSize: '0.8125rem',
+                    fontSize: '1rem',
                     fontWeight: 600,
                     color: selected ? '#115E59' : '#84918D',
                     bgcolor: selected ? 'rgba(15,118,110,0.1)' : '#EEF3F0',

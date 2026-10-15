@@ -104,7 +104,7 @@ export default function NotificationMenu({ anchorEl, onClose }) {
         <Button
           size="small"
           onClick={() => { markAllAsRead(); setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true }))); }}
-          sx={{ textTransform: 'none', fontWeight: 600, color: '#0F766E', fontSize: '0.9375rem' }}
+          sx={{ textTransform: 'none', fontWeight: 600, color: '#0F766E', fontSize: '1.125rem' }}
         >
           Mark all read
         </Button>

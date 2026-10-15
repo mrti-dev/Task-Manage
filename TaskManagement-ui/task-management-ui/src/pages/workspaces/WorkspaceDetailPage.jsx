@@ -367,7 +367,7 @@ export default function WorkspaceDetailPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       {(() => {
                         const pc = projectStatusColors[project.status] || { bg: '#EEF3F0', text: '#66736F' };
-                        return <Chip label={project.status} size="small" sx={{ fontWeight: 600, fontSize: '0.8125rem', bgcolor: pc.bg, color: pc.text }} />;
+                        return <Chip label={project.status} size="small" sx={{ fontWeight: 600, fontSize: '1rem', bgcolor: pc.bg, color: pc.text }} />;
                       })()}
                       {project.endDate && (
                         <Typography variant="caption" sx={{ color: '#84918D' }}>Due: {project.endDate}</Typography>
@@ -437,7 +437,7 @@ export default function WorkspaceDetailPage() {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Box sx={{ width: 34, height: 34, borderRadius: '50%', bgcolor: '#0F766E',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15 }}>
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 18 }}>
                           {member.user?.username?.[0]?.toUpperCase() || '?'}
                         </Box>
                         <Box>
@@ -454,7 +454,7 @@ export default function WorkspaceDetailPage() {
                         size="small"
                         sx={{
                           fontWeight: 600,
-                          fontSize: '0.8125rem',
+                          fontSize: '1rem',
                           bgcolor: member.role === 'OWNER' ? '#FEF3C7' : member.role === 'ADMIN' ? '#E0F2FE' : '#EEF3F0',
                           color: member.role === 'OWNER' ? '#D97706' : member.role === 'ADMIN' ? '#0369A1' : '#66736F',
                         }}
@@ -535,13 +535,13 @@ export default function WorkspaceDetailPage() {
                     invitations.map((inv) => (
                       <TableRow key={inv.id}>
                         <TableCell><Typography variant="body2" fontWeight={600}>{inv.email}</Typography></TableCell>
-                        <TableCell><Chip label={inv.role} size="small" sx={{ fontSize: '0.775rem' }} /></TableCell>
+                        <TableCell><Chip label={inv.role} size="small" sx={{ fontSize: '0.9625rem' }} /></TableCell>
                         <TableCell>
                           <Chip
                             label={inv.status}
                             size="small"
                             sx={{
-                              fontSize: '0.775rem',
+                              fontSize: '0.9625rem',
                               fontWeight: 700,
                               bgcolor: ['PENDING', 'EXPIRED'].includes(inv.status) ? '#FEF3C7' : ['ADDED', 'ACCEPTED'].includes(inv.status) ? '#DCFCE7' : '#FEE2E2',
                               color: ['PENDING', 'EXPIRED'].includes(inv.status) ? '#D97706' : ['ADDED', 'ACCEPTED'].includes(inv.status) ? '#16A34A' : '#DC2626',

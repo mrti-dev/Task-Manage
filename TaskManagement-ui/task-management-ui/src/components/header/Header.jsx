@@ -147,7 +147,7 @@ export default function Header({ onToggleSidebar }) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => { if (searchResults) setSearchPopperOpen(true); }}
-            sx={{ flex: 1, fontSize: '1rem' }}
+            sx={{ flex: 1, fontSize: '1.1875rem' }}
           />
           {searchLoading && <CircularProgress size={16} sx={{ color: '#0F766E', mr: 0.5 }} />}
           {searchQuery && (
@@ -279,7 +279,7 @@ export default function Header({ onToggleSidebar }) {
                         <Chip
                           size="small"
                           label={t.status}
-                          sx={{ fontSize: '0.775rem', height: 20 }}
+                          sx={{ fontSize: '0.9625rem', height: 20 }}
                         />
                       )}
                     </Box>
@@ -328,7 +328,7 @@ export default function Header({ onToggleSidebar }) {
                 width: 34,
                 height: 34,
                 bgcolor: '#0F766E',
-                fontSize: '1rem',
+                fontSize: '1.1875rem',
                 fontWeight: 700,
               }}
             >
@@ -390,7 +390,7 @@ export default function Header({ onToggleSidebar }) {
         <DialogTitle sx={{ fontWeight: 700, color: '#17201F', textAlign: 'center' }}>Profile</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pb: 3 }}>
           <Avatar src={user?.avatar || ''}
-            sx={{ width: 88, height: 88, bgcolor: '#0F766E', fontSize: 34, fontWeight: 700, boxShadow: '0 4px 16px rgba(15,118,110,0.3)' }}>
+            sx={{ width: 88, height: 88, bgcolor: '#0F766E', fontSize: 37, fontWeight: 700, boxShadow: '0 4px 16px rgba(15,118,110,0.3)' }}>
             {user?.username?.[0]?.toUpperCase() || 'U'}
           </Avatar>
           <Box sx={{ textAlign: 'center' }}>

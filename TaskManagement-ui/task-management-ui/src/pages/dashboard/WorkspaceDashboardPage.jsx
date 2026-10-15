@@ -427,7 +427,7 @@ export default function WorkspaceDashboardPage() {
                     <TableRow key={m.userId} hover>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Avatar src={m.avatar || ''} sx={{ width: 32, height: 32, bgcolor: '#0F766E', fontSize: '0.875rem' }}>
+                          <Avatar src={m.avatar || ''} sx={{ width: 32, height: 32, bgcolor: '#0F766E', fontSize: '1.0625rem' }}>
                             {m.username?.[0]?.toUpperCase()}
                           </Avatar>
                           <Box>
@@ -468,7 +468,7 @@ export default function WorkspaceDashboardPage() {
                                 size="small"
                                 label={`${pInfo.label}: ${pCount}`}
                                 sx={{
-                                  fontSize: '0.8125rem',
+                                  fontSize: '1rem',
                                   fontWeight: 600,
                                   bgcolor: `${pInfo.color}15`,
                                   color: pInfo.color,

@@ -442,7 +442,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
               {loading ? 'Loading...' : task?.title}
             </Typography>
             {task?.parentTaskId && (
-              <Chip size="small" icon={<SubtaskIcon sx={{ fontSize: 14 }} />} label="Subtask" sx={{ height: 22, fontSize: '0.775rem' }} />
+              <Chip size="small" icon={<SubtaskIcon sx={{ fontSize: 14 }} />} label="Subtask" sx={{ height: 22, fontSize: '0.9625rem' }} />
             )}
           </Box>
           <Box>
@@ -505,7 +505,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                     onChange={(e) => handleStatusChange(e.target.value)}
                     disabled={editLoading}
                     sx={{
-                      fontWeight: 600, fontSize: '0.875rem', borderRadius: 2,
+                      fontWeight: 600, fontSize: '1.0625rem', borderRadius: 2,
                       '& .MuiSelect-select': { py: 0.5 },
                       bgcolor: sc(task?.status).bg, color: sc(task?.status).text,
                       '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
@@ -519,11 +519,11 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                 </FormControl>
 
                 <Chip label={task?.priority} size="small"
-                  sx={{ fontWeight: 600, fontSize: '0.8125rem', bgcolor: pc(task?.priority).bg, color: pc(task?.priority).text }} />
+                  sx={{ fontWeight: 600, fontSize: '1rem', bgcolor: pc(task?.priority).bg, color: pc(task?.priority).text }} />
 
                 {task?.assignee && (
                   <Chip
-                    avatar={<Avatar sx={{ width: 22, height: 22, bgcolor: '#0F766E', fontSize: 13 }}>{task.assignee.username?.[0]?.toUpperCase()}</Avatar>}
+                    avatar={<Avatar sx={{ width: 22, height: 22, bgcolor: '#0F766E', fontSize: 16 }}>{task.assignee.username?.[0]?.toUpperCase()}</Avatar>}
                     label={task.assignee.username} size="small" variant="outlined" sx={{ fontWeight: 500, borderColor: '#CBD5D1' }}
                   />
                 )}
@@ -533,10 +533,10 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                 )}
 
                 {isOverdue && (
-                  <Chip label="OVERDUE" size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontWeight: 700, fontSize: '0.775rem' }} />
+                  <Chip label="OVERDUE" size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontWeight: 700, fontSize: '0.9625rem' }} />
                 )}
                 {isDueSoon && (
-                  <Chip label="DUE SOON" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 700, fontSize: '0.775rem' }} />
+                  <Chip label="DUE SOON" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 700, fontSize: '0.9625rem' }} />
                 )}
               </Box>
 
@@ -569,7 +569,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                       setSelectedTagId(e.target.value);
                       if (e.target.value) handleAttachTag(e.target.value);
                     }}
-                    sx={{ height: 28, fontSize: '0.875rem', borderRadius: 2 }}
+                    sx={{ height: 28, fontSize: '1.0625rem', borderRadius: 2 }}
                   >
                     <MenuItem value="" disabled>+ Attach Tag</MenuItem>
                     {workspaceTags
@@ -583,7 +583,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                 <Button
                   size="small"
                   onClick={() => setCreateTagOpen(true)}
-                  sx={{ textTransform: 'none', fontSize: '0.875rem', color: '#0F766E' }}
+                  sx={{ textTransform: 'none', fontSize: '1.0625rem', color: '#0F766E' }}
                 >
                   + New Tag
                 </Button>
@@ -659,7 +659,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                         <Chip
                           label={st.status}
                           size="small"
-                          sx={{ fontSize: '0.775rem', height: 20, bgcolor: sc(st.status).bg, color: sc(st.status).text }}
+                          sx={{ fontSize: '0.9625rem', height: 20, bgcolor: sc(st.status).bg, color: sc(st.status).text }}
                         />
                       </ListItem>
                     ))}
@@ -783,7 +783,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                             label={dep.dependencyType}
                             size="small"
                             sx={{
-                              fontSize: '0.775rem',
+                              fontSize: '0.9625rem',
                               height: 20,
                               fontWeight: 700,
                               bgcolor: dep.dependencyType === 'BLOCKS' ? '#FEF3C7' : '#E0F2FE',
@@ -808,7 +808,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                         value={depPrereqTaskId}
                         displayEmpty
                         onChange={(e) => setDepPrereqTaskId(e.target.value)}
-                        sx={{ fontSize: '0.9375rem' }}
+                        sx={{ fontSize: '1.125rem' }}
                       >
                         <MenuItem value="" disabled>Select Prerequisite Task</MenuItem>
                         {projectTasks
@@ -822,7 +822,7 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                       <Select
                         value={depType}
                         onChange={(e) => setDepType(e.target.value)}
-                        sx={{ fontSize: '0.9375rem' }}
+                        sx={{ fontSize: '1.125rem' }}
                       >
                         <MenuItem value="DEPENDS_ON">Depends On</MenuItem>
                         <MenuItem value="BLOCKS">Blocks</MenuItem>
@@ -856,14 +856,14 @@ export default function TaskDetailModal({ taskId, open, initialEditMode = false,
                     {comments.map((comment) => (
                       <ListItem key={comment.id} alignItems="flex-start" disableGutters sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar sx={{ minWidth: 40 }}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0F766E', fontSize: 14, fontWeight: 700 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0F766E', fontSize: 17, fontWeight: 700 }}>
                             {comment.user?.username?.[0]?.toUpperCase() || '?'}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="subtitle2" fontSize={15} fontWeight={600} sx={{ color: '#17201F' }}>
+                              <Typography variant="subtitle2" fontSize={18} fontWeight={600} sx={{ color: '#17201F' }}>
                                 {comment.user?.username || 'Unknown'}
                               </Typography>
                               <Typography variant="caption" sx={{ color: '#CBD5D1' }}>

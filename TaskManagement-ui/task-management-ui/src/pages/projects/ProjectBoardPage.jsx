@@ -173,7 +173,7 @@ export default function ProjectBoardPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
             {(() => {
               const pc = projectStatusColors[project.status] || { bg: '#EEF3F0', text: '#66736F' };
-              return <Chip label={project.status} size="small" sx={{ fontWeight: 600, fontSize: '0.8125rem', bgcolor: pc.bg, color: pc.text }} />;
+              return <Chip label={project.status} size="small" sx={{ fontWeight: 600, fontSize: '1rem', bgcolor: pc.bg, color: pc.text }} />;
             })()}
             {project.startDate && <Typography variant="caption" sx={{ color: '#84918D' }}>Start: {project.startDate}</Typography>}
             {project.endDate && <Typography variant="caption" sx={{ color: '#84918D' }}>End: {project.endDate}</Typography>}
