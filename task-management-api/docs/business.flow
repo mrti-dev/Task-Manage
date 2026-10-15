@@ -1,0 +1,83 @@
+flowchart TD
+    Start([Bắt đầu]) --> Auth{Đã xác thực?}
+    Auth -- Không --> Unauthorized[Trả lỗi không có quyền]
+    Auth -- Có --> Action{Thao tác}
+
+    Action -->|Tạo| ValidateCreate[Kiểm tra dữ liệu tạo]
+    ValidateCreate --> CreateValid{Hợp lệ?}
+    CreateValid -- Không --> ValidationError[Trả lỗi dữ liệu]
+    CreateValid -- Có --> CreateTask[Lưu công việc]
+
+    Action -->|Xem| FindTask[Tìm công việc theo quyền truy cập]
+    Action -->|Cập nhật| FindEditable[Tìm công việc có thể sửa]
+    Action -->|Đổi trạng thái| CheckTransition[Kiểm tra chuyển trạng thái]
+    Action -->|Xóa hoặc lưu trữ| CheckDeletePolicy[Kiểm tra chính sách và quyền]
+
+    FindTask --> Exists{Tồn tại?}
+    FindEditable --> Exists
+    Exists -- Không --> NotFound[Trả lỗi không tìm thấy]
+    Exists -- Có --> Success[Trả kết quả]
+
+    CheckTransition --> TransitionValid{Chuyển trạng thái hợp lệ?}
+    TransitionValid -- Không --> Conflict[Trả lỗi xung đột nghiệp vụ]
+    TransitionValid -- Có --> SaveTransition[Lưu trạng thái mới]
+
+    CheckDeletePolicy --> DeleteAllowed{Được phép?}
+    DeleteAllowed -- Không --> Forbidden[Trả lỗi không có quyền]
+    DeleteAllowed -- Có --> DeleteTask[Xóa hoặc lưu trữ]
+
+    CreateTask --> Success
+    SaveTransition --> Success
+    DeleteTask --> Success
+
+    subgraph EmailVerification[Xác minh đăng ký bằng OTP]
+        Reg[Người dùng đăng ký] --> RegVal{Dữ liệu hợp lệ & email chưa trùng?}
+        RegVal -- Không --> RegErr[Báo lỗi email đã được sử dụng hoặc dữ liệu không hợp lệ]
+        RegVal -- Có --> CreateUnverified[Tạo user email_verified=false]
+        CreateUnverified --> GenOtp[Sinh OTP 6 số & lưu hash]
+        GenOtp --> QueueOtp[Mã hóa và ghi outbox trong cùng giao dịch]
+        QueueOtp --> CommitOtp
+        CommitOtp --> ReturnEmailExp[Trả email và hạn dùng; không cấp JWT]
+        CommitOtp --> SendOtp[Worker gửi OTP qua Gmail SMTP, thử lại khi lỗi]
+        VerifyReq[Gửi OTP xác minh] --> CheckOtp{Hợp lệ, chưa dùng, chưa hết hạn, <= 5 lần?}
+        CheckOtp -- Sai mã --> OtpFail[Tăng attempt_count và commit / báo lỗi]
+        CheckOtp -- Hết hạn hoặc đã dùng hoặc hết lượt --> RejectOtp[Từ chối xác minh]
+        CheckOtp -- Có --> MarkVerified[email_verified=true & đánh dấu OTP đã dùng]
+        MarkVerified --> IssueJwt[Cấp JWT access token + refresh cookie]
+        ResendReq[Yêu cầu gửi lại OTP] --> CheckCooldown{Tài khoản hợp lệ và hết cooldown 60s?}
+        CheckCooldown -- Không --> GenericResend[Trả response chung]
+        CheckCooldown -- Có --> InvalidateOld[Vô hiệu OTP cũ & sinh OTP mới]
+        InvalidateOld --> QueueOtp
+        LoginReq[Đăng nhập] --> CheckCreds{Email & mật khẩu đúng?}
+        CheckCreds -- Không --> LoginNotFound[Báo sai thông tin]
+        CheckCreds -- Có --> CheckEmailVerified{email_verified=true?}
+        CheckEmailVerified -- Không --> EmailNotVerifiedErr[Trả mã lỗi EMAIL_NOT_VERIFIED]
+        CheckEmailVerified -- Có --> IssueJwt
+        RefreshReq[Refresh token] --> RefreshVerified{email_verified=true?}
+        RefreshVerified -- Không --> DenyRefresh[Từ chối refresh]
+        RefreshVerified -- Có --> IssueJwt
+    end
+
+    subgraph WorkspaceMember[Thêm thành viên và chuyển Owner]
+        Add[Owner/Admin nhập email tài khoản hiện có] --> ValidateMember{Tài khoản tồn tại và chưa là thành viên?}
+        ValidateMember -- Không --> AddError[Từ chối và báo nguyên nhân]
+        ValidateMember -- Có --> SaveMember[Lưu membership ngay trong transaction]
+        SaveMember --> InAppAdded[Ghi notification và email đã mã hóa vào outbox trong giao dịch]
+        InAppAdded --> CommitTx[Giao dịch commit thành công]
+        CommitTx --> RealtimeNotice[Phát notification realtime]
+        CommitTx --> SendNotice[Worker gửi email link mở workspace, thử lại khi lỗi]
+        ResendNotice[Owner/Admin yêu cầu gửi lại thông báo] --> InAppAdded
+        Transfer[Owner yêu cầu chuyển quyền] --> Lock[Khóa workspace]
+        Lock --> Target{Người nhận quyền đã là thành viên?}
+        Target -- Không --> TransferError[Từ chối]
+        Target -- Có --> Swap[Owner hiện tại thành Admin, thành viên đích thành Owner]
+    end
+
+    subgraph TaskPlanning[Hỗ trợ lập kế hoạch task]
+        Task[Task] --> Checklist[Checklist items]
+        Task --> Tags[Workspace tags]
+        Task --> Dependency[Task dependencies]
+        Task --> Calendar[Calendar và deadline reminder]
+        Task --> Personal[My Tasks, search và saved filters]
+        Task --> Dashboard[Workspace dashboard và workload]
+    end

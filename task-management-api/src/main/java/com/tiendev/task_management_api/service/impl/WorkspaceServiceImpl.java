@@ -78,9 +78,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<WorkspaceResponse> getAll() {
-		Set<Long> memberWorkspaceIds = getMemberWorkspaceIds();
-		return workspaceRepository.findAll().stream()
-				.filter(w -> w.isActive() && memberWorkspaceIds.contains(w.getId()))
+		Long currentUserId = getCurrentUserId();
+		return workspaceRepository.findActiveWorkspacesByUserId(currentUserId).stream()
 				.map(this::toWorkspaceResponse)
 				.toList();
 	}

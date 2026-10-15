@@ -138,9 +138,7 @@ public class TaskServiceImpl implements TaskService {
 	public PageResponse<TaskResponse> getAll(Pageable pageable) {
 		Set<Long> memberWorkspaceIds = getMemberWorkspaceIds();
 		Page<Task> page = taskRepository.findAllActiveByWorkspaceIds(memberWorkspaceIds, pageable);
-		List<TaskResponse> content = page.getContent().stream()
-				.map(this::toTaskResponse)
-				.toList();
+		List<TaskResponse> content = mapTaskListToResponses(page.getContent());
 		return PageResponse.from(page, content);
 	}
 
@@ -151,11 +149,10 @@ public class TaskServiceImpl implements TaskService {
 		Specification<Task> spec = Specification
 				.where(TaskSpecifications.isActive())
 				.and(TaskSpecifications.inWorkspaces(memberWorkspaceIds))
-				.and(TaskSpecifications.fromFilter(filter));
+				.and(TaskSpecifications.fromFilter(filter))
+				.and(TaskSpecifications.fetchRelations());
 		Page<Task> page = taskRepository.findAll(spec, pageable);
-		List<TaskResponse> content = page.getContent().stream()
-				.map(this::toTaskResponse)
-				.toList();
+		List<TaskResponse> content = mapTaskListToResponses(page.getContent());
 		return PageResponse.from(page, content);
 	}
 
@@ -521,6 +518,74 @@ public class TaskServiceImpl implements TaskService {
 				.filter(Task::isActive)
 				.map(this::toTaskResponse)
 				.toList();
+	}
+
+	private java.util.List<TaskResponse> mapTaskListToResponses(java.util.List<Task> tasks) {
+		if (tasks.isEmpty()) {
+			return java.util.Collections.emptyList();
+		}
+		java.util.List<Long> taskIds = tasks.stream().map(Task::getId).toList();
+		java.util.Map<Long, int[]> subtaskCounts = new java.util.HashMap<>();
+		for (Object[] row : taskRepository.countSubtasksByParentTaskIds(taskIds)) {
+			Long parentId = (Long) row[0];
+			int total = ((Number) row[1]).intValue();
+			int completed = row[2] != null ? ((Number) row[2]).intValue() : 0;
+			subtaskCounts.put(parentId, new int[]{total, completed});
+		}
+
+		java.util.Map<Long, java.util.List<com.tiendev.task_management_api.dto.TagResponse>> tags = new java.util.HashMap<>();
+		for (Object[] row : taskRepository.findTagRowsByTaskIds(taskIds)) {
+			tags.computeIfAbsent((Long) row[0], ignored -> new java.util.ArrayList<>())
+					.add(com.tiendev.task_management_api.dto.TagResponse.builder()
+							.id((Long) row[1]).workspaceId((Long) row[2]).name((String) row[3])
+							.color((String) row[4]).build());
+		}
+
+		java.util.Map<Long, java.util.List<com.tiendev.task_management_api.dto.ChecklistItemResponse>> checklists = new java.util.HashMap<>();
+		for (Object[] row : taskRepository.findChecklistRowsByTaskIds(taskIds)) {
+			checklists.computeIfAbsent((Long) row[0], ignored -> new java.util.ArrayList<>())
+					.add(com.tiendev.task_management_api.dto.ChecklistItemResponse.builder()
+							.id((Long) row[1]).taskId((Long) row[0]).title((String) row[2])
+							.completed((Boolean) row[3]).position(((Number) row[4]).intValue())
+							.createdAt((java.time.LocalDateTime) row[5]).build());
+		}
+
+		java.util.Map<Long, Integer> commentCounts = taskRepository.countCommentsByTaskIds(taskIds).stream()
+				.collect(java.util.stream.Collectors.toMap(row -> (Long) row[0], row -> ((Number) row[1]).intValue()));
+
+		return tasks.stream()
+				.map(task -> toTaskListResponse(task, subtaskCounts, tags, checklists, commentCounts))
+				.toList();
+	}
+
+	private TaskResponse toTaskListResponse(Task task, java.util.Map<Long, int[]> subtaskCounts,
+			java.util.Map<Long, java.util.List<com.tiendev.task_management_api.dto.TagResponse>> tags,
+			java.util.Map<Long, java.util.List<com.tiendev.task_management_api.dto.ChecklistItemResponse>> checklists,
+			java.util.Map<Long, Integer> commentCounts) {
+		UserResponse assigneeResponse = null;
+		if (task.getAssignee() != null) {
+			assigneeResponse = UserResponse.builder().id(task.getAssignee().getId())
+					.username(task.getAssignee().getUsername()).email(task.getAssignee().getEmail())
+					.avatar(task.getAssignee().getAvatar()).role(task.getAssignee().getRole()).build();
+		}
+
+		LocalDate today = LocalDate.now();
+		boolean overdue = task.getDeadline() != null && task.getDeadline().isBefore(today) && task.getStatus() != TaskStatus.DONE;
+		boolean dueSoon = task.getDeadline() != null && !task.getDeadline().isBefore(today) && !task.getDeadline().isAfter(today.plusDays(2)) && task.getStatus() != TaskStatus.DONE;
+
+		Long parentTaskId = task.getParentTask() != null ? task.getParentTask().getId() : null;
+		int[] counts = subtaskCounts != null ? subtaskCounts.getOrDefault(task.getId(), new int[]{0, 0}) : new int[]{0, 0};
+
+		return TaskResponse.builder().id(task.getId()).workspaceId(task.getProject().getWorkspace().getId())
+				.projectId(task.getProject().getId()).projectName(task.getProject().getName()).title(task.getTitle())
+				.description(task.getDescription()).priority(task.getPriority()).status(task.getStatus())
+				.assignee(assigneeResponse).deadline(task.getDeadline())
+				.overdue(overdue).dueSoon(dueSoon)
+				.parentTaskId(parentTaskId).subtaskCount(counts[0]).completedSubtaskCount(counts[1])
+				.tags(tags.getOrDefault(task.getId(), java.util.Collections.emptyList()))
+				.checklist(checklists.getOrDefault(task.getId(), java.util.Collections.emptyList()))
+				.commentCount(commentCounts.getOrDefault(task.getId(), 0))
+				.createdAt(task.getCreatedAt()).updatedAt(task.getUpdatedAt()).build();
 	}
 
 	private TaskResponse toTaskResponse(Task task) {

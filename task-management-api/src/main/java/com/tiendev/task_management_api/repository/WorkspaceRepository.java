@@ -27,4 +27,9 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
             @Param("workspaceIds") Collection<Long> workspaceIds,
             @Param("query") String query,
             Pageable pageable);
+
+    @Query("SELECT DISTINCT w FROM Workspace w JOIN w.members m " +
+           "WHERE m.user.id = :userId AND w.active = true " +
+           "ORDER BY w.id ASC")
+    List<Workspace> findActiveWorkspacesByUserId(@Param("userId") Long userId);
 }

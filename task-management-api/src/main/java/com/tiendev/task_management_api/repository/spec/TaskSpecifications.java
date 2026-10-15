@@ -23,6 +23,17 @@ public class TaskSpecifications {
         return (root, query, cb) -> root.get("project").get("workspace").get("id").in(workspaceIds);
     }
 
+    public static Specification<Task> fetchRelations() {
+        return (root, query, cb) -> {
+            if (Long.class != query.getResultType() && long.class != query.getResultType()) {
+                root.fetch("project", jakarta.persistence.criteria.JoinType.INNER)
+                    .fetch("workspace", jakarta.persistence.criteria.JoinType.INNER);
+                root.fetch("assignee", jakarta.persistence.criteria.JoinType.LEFT);
+            }
+            return null;
+        };
+    }
+
     public static Specification<Task> fromFilter(TaskFilterRequest filter) {
         if (filter == null) {
             return null;

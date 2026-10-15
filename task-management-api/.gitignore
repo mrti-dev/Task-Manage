@@ -80,10 +80,6 @@ application-secret.properties
 *.tmp
 *.temp
 
-docs
-
-AGENTS.md
-
 ### Other cloned repos in project root (not part of this project) ###
 /opencode/
 /opencode-skills/

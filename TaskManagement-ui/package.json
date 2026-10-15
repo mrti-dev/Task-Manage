@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "start": "npm --prefix task-management-ui run dev",
-    "dev": "npm --prefix task-management-ui dev",
+    "dev": "npm --prefix task-management-ui run dev",
     "build": "npm --prefix task-management-ui build",
     "stop": "npm --prefix task-management-ui stop"
   }

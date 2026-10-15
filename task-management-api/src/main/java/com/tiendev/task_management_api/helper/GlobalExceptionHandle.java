@@ -16,6 +16,9 @@ import com.tiendev.task_management_api.exception.ResourceAlreadyExistsException;
 import com.tiendev.task_management_api.exception.ResourceNotFoundException;
 import com.tiendev.task_management_api.exception.UnauthorizedException;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandle {
 
@@ -52,7 +55,7 @@ public class GlobalExceptionHandle {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<?> handleAllException(Exception ex) {
-		System.out.println(ex);
+		log.error("Unhandled exception: ", ex);
 		return ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 	}
 

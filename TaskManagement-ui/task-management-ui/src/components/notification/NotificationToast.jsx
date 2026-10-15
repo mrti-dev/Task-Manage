@@ -10,12 +10,17 @@ export default function NotificationToast() {
     if (!toast) return;
     if (!toast.isRead) markAsRead(toast.id);
     const target = toast.link;
-    if (target) {
-      if (toast.type === 'TASK_DELETED') {
-        navigate(target.substring(0, target.lastIndexOf('/tasks/')));
-      } else {
+    if (toast.type === 'TASK_DELETED') {
+      if (target && target.includes('/tasks/')) {
+        const parentPath = target.substring(0, target.lastIndexOf('/tasks/'));
+        navigate(parentPath || '/');
+      } else if (target) {
         navigate(target);
+      } else {
+        navigate('/');
       }
+    } else if (target) {
+      navigate(target);
     }
     setToast(null);
   };

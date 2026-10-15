@@ -1,6 +1,5 @@
 package com.tiendev.task_management_api.config;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -18,13 +17,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
-@RequiredArgsConstructor
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private static final Pattern WORKSPACE_TOPIC = Pattern.compile("^/topic/workspace/(\\d+)(?:/.*)?$");
 
     private final JwtUtil jwtUtil;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+
+    public WebSocketAuthInterceptor(JwtUtil jwtUtil, WorkspaceMemberRepository workspaceMemberRepository) {
+        this.jwtUtil = jwtUtil;
+        this.workspaceMemberRepository = workspaceMemberRepository;
+    }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {

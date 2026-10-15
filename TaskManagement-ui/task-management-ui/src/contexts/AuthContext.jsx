@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginApi, registerApi, logoutApi, refreshTokenApi, verifyEmailApi } from '../api/authApi';
-import { getWorkspaceMembersApi } from '../api/workspaceMemberApi';
 import { setAccessToken, setOnAuthFailed } from '../api/axiosClient';
 
 function decodeJwtPayload(token) {
@@ -114,21 +113,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const isOwner = async (workspaceId) => {
-    try {
-      const { data: res } = await getWorkspaceMembersApi();
-      const members = res?.data ?? res;
-      if (!Array.isArray(members)) return false;
-      const member = members.find(
-        (m) => m.workspaceId === Number(workspaceId) && m.user?.id === user?.id && m.role === 'OWNER'
-      );
-      return !!member;
-    } catch (err) {
-      console.warn('Failed to verify owner permission:', err?.message);
-      return false;
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -140,7 +124,6 @@ export function AuthProvider({ children }) {
         verifyEmail,
         logout,
         refresh,
-        isOwner,
       }}
     >
       {children}

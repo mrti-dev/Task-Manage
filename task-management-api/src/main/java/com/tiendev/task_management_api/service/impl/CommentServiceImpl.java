@@ -102,12 +102,8 @@ public class CommentServiceImpl implements CommentService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<CommentResponse> getAll() {
-		Set<Long> memberWorkspaceIds = getMemberWorkspaceIds();
-		return commentRepository.findAll().stream()
-				.filter(c -> c.getTask().isActive()
-						&& c.getTask().getProject().isActive()
-						&& c.getTask().getProject().getWorkspace().isActive()
-						&& memberWorkspaceIds.contains(c.getTask().getProject().getWorkspace().getId()))
+		Long currentUserId = getCurrentUserId();
+		return commentRepository.findActiveCommentsByUserId(currentUserId).stream()
 				.map(this::toCommentResponse)
 				.toList();
 	}

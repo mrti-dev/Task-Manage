@@ -9,6 +9,8 @@
 
 `AGENTS.md` trong thư mục con được ưu tiên khi có quy tắc cụ thể hơn.
 
+Quy tắc chi tiết theo phạm vi nằm trong `rules/README.md`. Khi làm việc với phần nào, phải đọc file rule tương ứng trước khi sửa.
+
 ## Quy trình bắt buộc
 
 1. Đọc `README.md` và các tài liệu liên quan trước khi sửa mã.

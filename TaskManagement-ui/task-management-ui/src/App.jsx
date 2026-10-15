@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { Box, CircularProgress } from '@mui/material';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import AuthLayout from './components/layouts/AuthLayout';
 import MainLayout from './components/layouts/MainLayout';
@@ -16,14 +17,39 @@ const CalendarPage = lazy(() => import('./pages/calendar/CalendarPage'));
 const MyTasksPage = lazy(() => import('./pages/tasks/MyTasksPage'));
 const WorkspaceDashboardPage = lazy(() => import('./pages/dashboard/WorkspaceDashboardPage'));
 
+function RouteLoading() {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+      }}
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
 function GuestRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <RouteLoading />;
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <Suspense fallback={null}>
+      <Suspense fallback={<RouteLoading />}>
         <Routes>
         <Route element={<GuestRoute><AuthLayout /></GuestRoute>}>
           <Route path="/login" element={<LoginPage />} />
